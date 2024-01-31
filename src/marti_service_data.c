@@ -36,7 +36,7 @@ MartiServiceData *AllocateMartiServiceData  (void)
 		{
 			data_p -> msd_mongo_p = NULL;
 			data_p -> msd_database_s = NULL;
-			data_p -> msd_populations_collection_s = NULL;
+			data_p -> msd_collection_s = NULL;
 
 			return data_p;
 		}
@@ -65,7 +65,7 @@ bool ConfigureMartiService (MartiServiceData *data_p, GrassrootsServer *grassroo
 
 	if (data_p -> msd_database_s)
 		{
-			if ((data_p -> msd_populations_collection_s = GetJSONString (service_config_p, "populations_collection")) != NULL)
+			if ((data_p -> msd_collection_s = GetJSONString (service_config_p, "populations_collection")) != NULL)
 				{
 					if ((data_p -> msd_mongo_p = AllocateMongoTool (NULL, grassroots_p -> gs_mongo_manager_p)) != NULL)
 						{

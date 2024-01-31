@@ -66,9 +66,9 @@ typedef struct /*MARTI_SERVICE_LOCAL*/ MartiServiceData
 	/**
 	 * @private
 	 *
-	 * The collection name of the population parentl-cross data use.
+	 * The collection name for the MARTi data.
 	 */
-	const char *msd_populations_collection_s;
+	const char *msd_collection_s;
 
 
 } MartiServiceData;

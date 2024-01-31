@@ -347,3 +347,164 @@ static ParameterSet *IsResourceForMartiSubmissionService (Service * UNUSED_PARAM
 	return NULL;
 }
 
+
+
+static json_t *GetAllEntriesAsJSON (const MartiServiceData *data_p)
+{
+	json_t *results_p = NULL;
+
+	if (SetMongoToolDatabaseAndCollection (data_p -> msd_mongo_p, data_p -> msd_database_s, data_p -> msd_collection_s))
+		{
+			bson_t *query_p = NULL;
+			bson_t *opts_p =  BCON_NEW ( "sort", "{", PR_NAME_S, BCON_INT32 (1), "}");
+
+			results_p = GetAllMongoResultsAsJSON (data_p -> msd_mongo_p, query_p, opts_p);
+
+			if (opts_p)
+				{
+					bson_destroy (opts_p);
+				}
+
+		}		/* if (SetMongoToolCollection (data_p -> dftsd_mongo_p, data_p -> dftsd_collection_ss [DFTD_PROGRAMME])) */
+
+	return results_p;
+}
+
+
+bool SetUpProgrammesListParameter (const FieldTrialServiceData *data_p, StringParameter *param_p, const Programme *active_program_p, const bool empty_option_flag)
+{
+	bool success_flag = false;
+	json_t *results_p = GetAllEntriesAsJSON (data_p, false);
+	bool value_set_flag = false;
+
+	if (results_p)
+		{
+			if (json_is_array (results_p))
+				{
+					const size_t num_results = json_array_size (results_p);
+
+					success_flag = true;
+
+					/*
+					 * If there's an empty option, add it
+					 */
+					if (empty_option_flag)
+						{
+							success_flag = CreateAndAddStringParameterOption (& (param_p -> sp_base_param), S_EMPTY_LIST_OPTION_S, S_EMPTY_LIST_OPTION_S);
+						}
+
+					if (success_flag)
+						{
+							if (num_results > 0)
+								{
+									size_t i = 0;
+									const char *param_value_s = GetStringParameterCurrentValue (param_p);
+
+									bson_oid_t *id_p = GetNewUnitialisedBSONOid ();
+
+									if (id_p)
+										{
+											while ((i < num_results) && success_flag)
+												{
+													json_t *entry_p = json_array_get (results_p, i);
+
+													if (GetMongoIdFromJSON (entry_p, id_p))
+														{
+															char *id_s = GetBSONOidAsString (id_p);
+
+															if (id_s)
+																{
+																	const char *name_s = GetJSONString (entry_p, PR_NAME_S);
+
+																	if (name_s)
+																		{
+																			if (param_value_s && (strcmp (param_value_s, id_s) == 0))
+																				{
+																					value_set_flag = true;
+																				}
+
+																			if (!CreateAndAddStringParameterOption (& (param_p -> sp_base_param), id_s, name_s))
+																				{
+																					success_flag = false;
+																					PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add param option \"%s\": \"%s\"", id_s, name_s);
+																				}
+
+																		}		/* if (name_s) */
+																	else
+																		{
+																			success_flag = false;
+																			PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, entry_p, "Failed to get \"%s\"", PR_NAME_S);
+																		}
+
+																	FreeBSONOidString (id_s);
+																}
+															else
+																{
+																	success_flag = false;
+																	PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, entry_p, "Failed to get Programme BSON oid");
+																}
+
+														}		/* if (GetMongoIdFromJSON (entry_p, id_p)) */
+													else
+														{
+															success_flag = false;
+															PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, entry_p, "GetMongoIdFromJSON () failed");
+														}
+
+													if (success_flag)
+														{
+															++ i;
+														}
+
+												}		/* while ((i < num_results) && success_flag) */
+
+											FreeBSONOid (id_p);
+										}		/* if (id_p) */
+
+									/*
+									 * If the parameter's value isn't on the list, reset it
+									 */
+									if ((param_value_s != NULL) && (strcmp (param_value_s, S_EMPTY_LIST_OPTION_S) != 0) && (value_set_flag == false))
+										{
+											PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "param value \"%s\" not on list of existing programmes", param_value_s);
+										}
+
+								}		/* if (num_results > 0) */
+							else
+								{
+									/* nothing to add */
+									success_flag = true;
+								}
+
+						}		/* if (success_flag) */
+
+
+				}		/* if (json_is_array (results_p)) */
+
+			json_decref (results_p);
+		}		/* if (results_p) */
+
+	if (success_flag)
+		{
+			if (active_program_p)
+				{
+					char *id_s = GetBSONOidAsString (active_program_p -> pr_id_p);
+
+					if (id_s)
+						{
+							success_flag = SetStringParameterDefaultValue (param_p, id_s);
+							FreeBSONOidString (id_s);
+						}
+					else
+						{
+							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to get id string for active program \"%s\"", active_program_p -> pr_name_s);
+							success_flag = false;
+						}
+				}
+		}
+
+	return success_flag;
+}
+
+
+
