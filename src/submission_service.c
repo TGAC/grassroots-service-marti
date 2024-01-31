@@ -33,11 +33,16 @@
 
 #include "string_parameter.h"
 #include "time_parameter.h"
+#include "marti_entry.h"
+
 
 
 /*
  * Static declarations
  */
+
+static const char * const S_EMPTY_LIST_OPTION_S = "<empty>";
+
 
 static const char *GetMartiSubmissionServiceName (const Service *service_p);
 
@@ -61,6 +66,9 @@ static ServiceMetadata *GetMartiSubmissionServiceMetadata (Service *service_p);
 
 static bool GetMartiSubmissionServiceParameterTypesForNamedParameters (const Service *service_p, const char *param_name_s, ParameterType *pt_p);
 
+
+
+static bool SetUpEntriesListParameter (const MartiServiceData *data_p, StringParameter *param_p, const MartiEntry *active_entry_p, const bool empty_option_flag);
 
 
 /*
@@ -356,7 +364,7 @@ static json_t *GetAllEntriesAsJSON (const MartiServiceData *data_p)
 	if (SetMongoToolDatabaseAndCollection (data_p -> msd_mongo_p, data_p -> msd_database_s, data_p -> msd_collection_s))
 		{
 			bson_t *query_p = NULL;
-			bson_t *opts_p =  BCON_NEW ( "sort", "{", PR_NAME_S, BCON_INT32 (1), "}");
+			bson_t *opts_p =  BCON_NEW ( "sort", "{", ME_NAME_S, BCON_INT32 (1), "}");
 
 			results_p = GetAllMongoResultsAsJSON (data_p -> msd_mongo_p, query_p, opts_p);
 
@@ -371,10 +379,11 @@ static json_t *GetAllEntriesAsJSON (const MartiServiceData *data_p)
 }
 
 
-bool SetUpProgrammesListParameter (const FieldTrialServiceData *data_p, StringParameter *param_p, const Programme *active_program_p, const bool empty_option_flag)
+
+static bool SetUpEntriesListParameter (const MartiServiceData *data_p, StringParameter *param_p, const MartiEntry *active_entry_p, const bool empty_option_flag)
 {
 	bool success_flag = false;
-	json_t *results_p = GetAllEntriesAsJSON (data_p, false);
+	json_t *results_p = GetAllEntriesAsJSON (data_p);
 	bool value_set_flag = false;
 
 	if (results_p)
@@ -414,7 +423,7 @@ bool SetUpProgrammesListParameter (const FieldTrialServiceData *data_p, StringPa
 
 															if (id_s)
 																{
-																	const char *name_s = GetJSONString (entry_p, PR_NAME_S);
+																	const char *name_s = GetJSONString (entry_p, ME_NAME_S);
 
 																	if (name_s)
 																		{
@@ -433,7 +442,7 @@ bool SetUpProgrammesListParameter (const FieldTrialServiceData *data_p, StringPa
 																	else
 																		{
 																			success_flag = false;
-																			PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, entry_p, "Failed to get \"%s\"", PR_NAME_S);
+																			PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, entry_p, "Failed to get \"%s\"", ME_NAME_S);
 																		}
 
 																	FreeBSONOidString (id_s);
@@ -486,9 +495,9 @@ bool SetUpProgrammesListParameter (const FieldTrialServiceData *data_p, StringPa
 
 	if (success_flag)
 		{
-			if (active_program_p)
+			if (active_entry_p)
 				{
-					char *id_s = GetBSONOidAsString (active_program_p -> pr_id_p);
+					char *id_s = GetBSONOidAsString (active_entry_p -> me_id_p);
 
 					if (id_s)
 						{
@@ -497,7 +506,7 @@ bool SetUpProgrammesListParameter (const FieldTrialServiceData *data_p, StringPa
 						}
 					else
 						{
-							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to get id string for active program \"%s\"", active_program_p -> pr_name_s);
+							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to get id string for active program \"%s\"", active_entry_p -> me_name_s);
 							success_flag = false;
 						}
 				}
