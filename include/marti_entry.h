@@ -47,7 +47,7 @@ typedef struct
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 #ifdef ALLOCATE_MARTI_ENTRY_TAGS
-	#define MARTI_ENTRY_PREFIX DFW_FIELD_TRIAL_SERVICE_API
+	#define MARTI_ENTRY_PREFIX MARTI_SERVICE_LOCAL
 	#define MARTI_ENTRY_VAL(x)	= x
 	#define MARTI_ENTRY_CONCAT_VAL(x,y)	= x y
 #else
@@ -93,6 +93,8 @@ MARTI_SERVICE_LOCAL void FreeMartiEntry (MartiEntry *marti_p);
 
 MARTI_SERVICE_LOCAL MartiEntry *GetMartiEntryFromJSON (const json_t *json_p, const MartiServiceData *data_p);
 
+
+MARTI_SERVICE_LOCAL OperationStatus SaveMartiEntry (MartiEntry *location_p, ServiceJob *job_p, MartiServiceData *data_p);
 
 
 #ifdef __cplusplus

@@ -41,6 +41,7 @@ INCLUDES = \
 	-I$(DIR_BSON_INC) 
 	
 SRCS 	= \
+	marti_entry.c \
 	marti_service.c \
 	marti_service_data.c \
 	search_service.c \

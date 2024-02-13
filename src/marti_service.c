@@ -20,6 +20,9 @@
 #define ALLOCATE_MARTI_SERVICE_TAGS (1)
 #include "marti_service.h"
 #include "marti_service_data.h"
+
+#include "marti_entry.h"
+
 #include "memory_allocations.h"
 #include "parameter.h"
 #include "service_job.h"
@@ -92,8 +95,19 @@ ServicesArray *GetServices (User *user_p, GrassrootsServer *grassroots_p)
 							* ((services_p -> sa_services_pp) + num_services) = search_service_p;
 						}
 
+					MartiServiceData *data_p =  (MartiServiceData *) ((* (services_p -> sa_services_pp)) -> se_data_p);
 
-					return services_p;
+					if (AddCollectionSingleIndex (data_p -> msd_mongo_p, data_p -> msd_database_s, data_p -> msd_collection_s, ME_LOCATION_S, "2dsphere", false, false))
+						{
+							return services_p;
+						}
+					else
+						{
+							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add index for db \"%s\" collection \"%s\" field \"%s\"", data_p -> msd_database_s, data_p -> msd_collection_s, ME_LOCATION_S);
+							FreeServicesArray (services_p);
+							return NULL;
+						}
+
 				}
 		}
 

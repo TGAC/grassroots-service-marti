@@ -5,9 +5,12 @@
  *      Author: billy
  */
 
+#define ALLOCATE_MARTI_ENTRY_TAGS (1)
 #include "marti_entry.h"
 #include "memory_allocations.h"
 #include "json_util.h"
+#include "mongodb_util.h"
+
 
 #include "string_utils.h"
 #include "time_util.h"
@@ -178,7 +181,7 @@ json_t *GetMartiEntryAsJSON (const MartiEntry *me_p, MartiServiceData *data_p)
 										{
 											if (json_object_set_new (marti_json_p, ME_LOCATION_S, location_p) == 0)
 												{
-													if (SetJSONString (location_p, "@type", "Point"))
+													if (SetJSONString (location_p, "type", "Point"))
 														{
 															json_t *coords_p = json_array ();
 
@@ -288,5 +291,39 @@ static bool AddNonTrivialDateToJSON (json_t *json_p, const char * const key_s, c
 		}
 
 	return false;
+}
+
+
+OperationStatus SaveMartiEntry (MartiEntry *marti_p, ServiceJob *job_p, MartiServiceData *data_p)
+{
+	OperationStatus status = OS_FAILED;
+	bson_t *selector_p = NULL;
+	bool success_flag = PrepareSaveData (& (marti_p -> me_id_p), &selector_p);
+
+	if (success_flag)
+		{
+			json_t *marti_json_p = GetMartiEntryAsJSON (marti_p, data_p);
+
+			if (marti_json_p)
+				{
+					if (SaveMongoDataWithTimestamp (data_p -> msd_mongo_p, marti_json_p, data_p -> msd_collection_s,
+																					selector_p, MONGO_TIMESTAMP_S))
+						{
+							status = OS_SUCCEEDED; //IndexData (job_p, marti_json_p, NULL);
+						}
+
+					json_decref (marti_json_p);
+				}		/* if (marti_json_p) */
+			else
+				{
+					PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to get MARTi Entry \"%s\" as JSON", marti_p -> me_name_s);
+					success_flag = false;
+				}
+
+		}		/* if (location_p -> lo_id_p) */
+
+	SetServiceJobStatus (job_p, status);
+
+	return status;
 }
 

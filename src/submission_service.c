@@ -32,6 +32,7 @@
 #include "schema_keys.h"
 
 #include "string_parameter.h"
+#include "double_parameter.h"
 #include "time_parameter.h"
 #include "marti_entry.h"
 
@@ -67,8 +68,9 @@ static ServiceMetadata *GetMartiSubmissionServiceMetadata (Service *service_p);
 static bool GetMartiSubmissionServiceParameterTypesForNamedParameters (const Service *service_p, const char *param_name_s, ParameterType *pt_p);
 
 
-
 static bool SetUpEntriesListParameter (const MartiServiceData *data_p, StringParameter *param_p, const MartiEntry *active_entry_p, const bool empty_option_flag);
+
+static json_t *GetAllEntriesAsJSON (const MartiServiceData *data_p);
 
 
 /*
@@ -161,8 +163,12 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 
 			if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_NAME.npt_type, MA_NAME.npt_name_s, "Name", "The name of the location", NULL, PL_ALL)) != NULL)
 				{
-					if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_MARTI_ID.npt_type, MA_NAME.npt_name_s, "MARTi ID", "The ID for this sample within MARTi", NULL, PL_ALL)) != NULL)
+					param_p -> pa_required_flag = true;
+
+					if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_MARTI_ID.npt_type, MA_MARTI_ID.npt_name_s, "MARTi ID", "The ID for this sample within MARTi", NULL, PL_ALL)) != NULL)
 						{
+							param_p -> pa_required_flag = true;
+
 							if (AddCommonParameters (param_set_p, NULL, data_p))
 								{
 									if ((param_p = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, NULL, MA_END_DATE.npt_name_s, "End Date", "The ending date, if different to the start date, of when this sample was taken", NULL, PL_ALL)) != NULL)
@@ -199,18 +205,24 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 
 static bool GetMartiSubmissionServiceParameterTypesForNamedParameters (const Service *service_p, const char *param_name_s, ParameterType *pt_p)
 {
+	bool success_flag = false;
 	const NamedParameterType params [] =
 		{
+			MA_ID,
 			MA_NAME,
 			MA_MARTI_ID,
-			MA_LATITUDE,
-			MA_LONGITUDE,
-			MA_START_DATE,
 			MA_END_DATE,
 			NULL
 		};
 
-	return DefaultGetParameterTypeForNamedParameter (param_name_s, pt_p, params);
+	success_flag = DefaultGetParameterTypeForNamedParameter (param_name_s, pt_p, params);
+
+	if (!success_flag)
+		{
+			success_flag = GetCommonParameterTypesForNamedParameters (service_p, param_name_s, pt_p);
+		}
+
+	return success_flag;
 }
 
 
@@ -233,7 +245,7 @@ static bool CloseMartiSubmissionService (Service *service_p)
 
 
 
-static ServiceJobSet *RunMartiSubmissionService (Service *service_p, ParameterSet *param_set_p, User * UNUSED_PARAM (user_p), ProvidersStateTable * UNUSED_PARAM (providers_p))
+static ServiceJobSet *RunMartiSubmissionService (Service *service_p, ParameterSet *param_set_p, User *user_p, ProvidersStateTable * UNUSED_PARAM (providers_p))
 {
 	MartiServiceData *data_p = (MartiServiceData *) (service_p -> se_data_p);
 
@@ -248,7 +260,94 @@ static ServiceJobSet *RunMartiSubmissionService (Service *service_p, ParameterSe
 
 			if (param_set_p)
 				{
+					bool success_flag = false;
+					const char *name_s = NULL;
+					const char *id_s = NULL;
+					bson_oid_t *id_p = NULL;
 
+					/*
+					 * Get the existing entry id if specified
+					 */
+					GetCurrentStringParameterValueFromParameterSet (param_set_p, MA_ID.npt_name_s, &id_s);
+
+					if (id_s)
+						{
+							if (strcmp (S_EMPTY_LIST_OPTION_S, id_s) != 0)
+								{
+									id_p = GetBSONOidFromString (id_s);
+
+									if (!id_p)
+										{
+											PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to load MARTi entry \"%s\" for editing", id_s);
+											return false;
+										}
+								}
+						}		/* if (id_value.st_string_value_s) */
+
+
+					if (GetCurrentStringParameterValueFromParameterSet (param_set_p, MA_NAME.npt_name_s, &name_s))
+						{
+							if (!IsStringEmpty (name_s))
+								{
+									const char *marti_id_s = NULL;
+
+									if (GetCurrentStringParameterValueFromParameterSet (param_set_p, MA_MARTI_ID.npt_name_s, &marti_id_s))
+										{
+											if (!IsStringEmpty (marti_id_s))
+												{
+													const double64 *latitude_p = NULL;
+													const double64 *longitude_p = NULL;
+													const struct tm *start_p = NULL;
+
+													if (GetCommonParameters (param_set_p, &latitude_p, &longitude_p, &start_p, name_s, job_p))
+														{
+															const struct tm *end_p = NULL;
+															bool owns_user_flag = false;
+															PermissionsGroup *permissions_group_p = NULL;
+															MartiEntry *entry_p = NULL;
+
+															GetCurrentTimeParameterValueFromParameterSet (param_set_p, MA_END_DATE.npt_name_s, &end_p);
+
+															entry_p = AllocateMartiEntry (id_p, user_p, permissions_group_p, owns_user_flag,
+																														name_s, marti_id_s, *latitude_p, *longitude_p,
+																														start_p, end_p);
+
+
+															if (entry_p)
+																{
+																	status = SaveMartiEntry (entry_p, job_p, data_p);
+
+																	FreeMartiEntry (entry_p);
+																}
+															else
+																{
+																	success_flag = false;
+																}
+
+														}		/* if (GetCurrentTimeParameterValueFromParameterSet (param_set_p, MA_START_DATE.npt_name_s, &start_p)) */
+
+												}		/* if (!IsStringEmpty (marti_id_s)) */
+											else
+												{
+													AddParameterErrorMessageToServiceJob (job_p, MA_MARTI_ID.npt_name_s, MA_MARTI_ID.npt_type, "MARTi Id is a required field");
+												}
+										}		/* if (GetCurrentStringParameterValueFromParameterSet (param_set_p, MA_MARTI_ID.npt_name_s, &marti_id_s)) */
+									else
+										{
+											AddParameterErrorMessageToServiceJob (job_p, MA_MARTI_ID.npt_name_s, MA_MARTI_ID.npt_type, "MARTi Id is a required field");
+										}
+
+								}		/* if (!IsStringEmpty (name_s)) */
+							else
+								{
+									AddParameterErrorMessageToServiceJob (job_p, MA_NAME.npt_name_s, MA_NAME.npt_type, "Name is a required field");
+								}
+
+						}		/* if (GetCurrentParameterValueFromParameterSet (param_set_p, MA_NAME.npt_name_s, &name_s)) */
+					else
+						{
+							AddParameterErrorMessageToServiceJob (job_p, MA_NAME.npt_name_s, MA_NAME.npt_type, "Name is a required field");
+						}
 
 				}		/* if (param_set_p) */
 

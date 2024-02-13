@@ -36,6 +36,9 @@
  * Static declarations
  */
 
+static NamedParameterType S_MAX_DISTANCE = { "Maximum Distance", PT_UNSIGNED_INT };
+
+
 
 static const char *GetMartiSearchServiceName (const Service *service_p);
 
@@ -58,6 +61,11 @@ static ParameterSet *IsResourceForMartiSearchService (Service *service_p, DataRe
 static bool CloseMartiSearchService (Service *service_p);
 
 static ServiceMetadata *GetMartiSearchServiceMetadata (Service *service_p);
+
+static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const uint32 min_distance, const uint32 max_distance);
+
+static bool AddNumberToArray (json_t *array_p, const double64 value);
+
 
 /*
  * API definitions
@@ -150,7 +158,12 @@ static ParameterSet *GetMartiSearchServiceParameters (Service *service_p, DataRe
 
 			if (AddCommonParameters (param_set_p, NULL, data_p))
 				{
-					return param_set_p;
+					Parameter *param_p  = EasyCreateAndAddUnsignedIntParameterToParameterSet (data_p, param_set_p, NULL, S_MAX_DISTANCE.npt_type, S_MAX_DISTANCE.npt_name_s, "Radius", "The maximum distance to find matching locations for", NULL, PL_ALL);
+
+					if (param_p)
+						{
+							return param_set_p;
+						}
 				}
 
 			FreeParameterSet (param_set_p);
@@ -166,7 +179,19 @@ static ParameterSet *GetMartiSearchServiceParameters (Service *service_p, DataRe
 
 static bool GetMartiSearchServiceParameterTypesForNamedParameters (const Service *service_p, const char *param_name_s, ParameterType *pt_p)
 {
-	bool success_flag = true;
+	bool success_flag = false;
+	const NamedParameterType params [] =
+		{
+			S_MAX_DISTANCE,
+			NULL
+		};
+
+	success_flag = DefaultGetParameterTypeForNamedParameter (param_name_s, pt_p, params);
+
+	if (!success_flag)
+		{
+			success_flag = GetCommonParameterTypesForNamedParameters (service_p, param_name_s, pt_p);
+		}
 
 	return success_flag;
 }
@@ -205,6 +230,17 @@ static ServiceJobSet *RunMartiSearchService (Service *service_p, ParameterSet *p
 
 			if (param_set_p)
 				{
+					const double64 *latitude_p = NULL;
+					const double64 *longitude_p = NULL;
+					const struct tm *start_p = NULL;
+
+					if (GetCommonParameters (param_set_p, &latitude_p, &longitude_p, &start_p, "search", job_p))
+						{
+							uint32 min_distance = 0;
+							uint32 max_distance = 1000;
+							json_t *query_p = GetSearchQuery (*latitude_p, *longitude_p, min_distance, max_distance);
+
+						}		/* if (GetCommonParameters (param_set_p, &latitude_p, &longitude_p, &start_p, "search", job_p)) */
 
 				}		/* if (param_set_p) */
 
@@ -315,3 +351,107 @@ static ParameterSet *IsResourceForMartiSearchService (Service * UNUSED_PARAM (se
 }
 
 
+/*
+ {
+		$nearSphere: {
+			 $geometry: {
+					type : "Point",
+					coordinates : [ <longitude>, <latitude> ]
+			 },
+			 $minDistance: <distance in meters>,
+			 $maxDistance: <distance in meters>
+		}
+	}
+ */
+static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const uint32 min_distance, const uint32 max_distance)
+{
+	json_t *query_p = json_object ();
+
+	if (query_p)
+		{
+			json_t *near_sphere_p = json_object ();
+
+			if (near_sphere_p)
+				{
+					if (json_object_set_new (query_p, "$nearSphere", near_sphere_p) == 0)
+						{
+							json_t *geometry_p = json_object ();
+
+							if (geometry_p)
+								{
+									if (json_object_set_new (near_sphere_p, "$geometry", geometry_p) == 0)
+										{
+											if (SetJSONString (geometry_p, "type", "Point"))
+												{
+													json_t *coords_p = json_array ();
+
+													if (coords_p)
+														{
+															if (json_object_set_new (geometry_p, "coordinates", coords_p) == 0)
+																{
+																	if (AddNumberToArray (coords_p, longitude))
+																		{
+																			if (AddNumberToArray (coords_p, latitude))
+																				{
+																					if ((min_distance == 0) || (SetJSONInteger (near_sphere_p, "$minDistance", min_distance)))
+																						{
+																							if ((max_distance == 0) || (SetJSONInteger (near_sphere_p, "$maxDistance", max_distance)))
+																								{
+																									return query_p;
+																								}
+
+																						}
+																				}
+
+																		}
+
+																}
+															else
+																{
+																	json_decref (coords_p);
+																}
+
+														}
+
+
+												}		/* if (SetJSONString (geometry_p, "type", "Point")) */
+										}
+									else
+										{
+											json_decref (geometry_p);
+										}
+								}
+
+						}
+					else
+						{
+							json_decref (near_sphere_p);
+						}
+				}
+
+			json_decref (query_p);
+		}		/* if (query_p) */
+
+	return NULL;
+}
+
+
+static bool AddNumberToArray (json_t *array_p, const double64 value)
+{
+	bool success_flag = false;
+	json_t *number_p = json_real (value);
+
+	if (number_p)
+		{
+			if (json_array_append_new (array_p, number_p) == 0)
+				{
+					success_flag = true;
+				}
+			else
+				{
+					json_decref (number_p);
+				}
+		}
+
+	return success_flag;
+}
