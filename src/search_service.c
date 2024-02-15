@@ -164,12 +164,17 @@ static ParameterSet *GetMartiSearchServiceParameters (Service *service_p, DataRe
 
 			if (AddCommonParameters (param_set_p, NULL, data_p))
 				{
-					Parameter *param_p  = EasyCreateAndAddUnsignedIntParameterToParameterSet (data_p, param_set_p, NULL, S_MAX_DISTANCE.npt_name_s, "Radius", "The maximum distance to find matching locations for", NULL, PL_ALL);
+					Parameter *param_p  = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, NULL, MA_END_DATE.npt_name_s, "End Date", "The ending date of when this sample was taken", NULL, PL_ALL);
 
 					if (param_p)
 						{
-							return param_set_p;
+							if ((param_p = EasyCreateAndAddUnsignedIntParameterToParameterSet (data_p, param_set_p, NULL, S_MAX_DISTANCE.npt_name_s, "Radius", "The maximum distance to find matching locations for", NULL, PL_ALL)) != NULL)
+								{
+									return param_set_p;
+								}
+
 						}
+
 				}
 
 			FreeParameterSet (param_set_p);
