@@ -22,15 +22,19 @@
 
 #include "search_service.h"
 #include "marti_service.h"
-
+#include "marti_entry.h"
 
 #include "audit.h"
 #include "streams.h"
 #include "math_utils.h"
 #include "string_utils.h"
+#include "time_util.h"
 
 #include "string_parameter.h"
 #include "boolean_parameter.h"
+#include "time_parameter.h"
+#include "unsigned_int_parameter.h"
+
 
 /*
  * Static declarations
@@ -62,9 +66,11 @@ static bool CloseMartiSearchService (Service *service_p);
 
 static ServiceMetadata *GetMartiSearchServiceMetadata (Service *service_p);
 
-static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const uint32 min_distance, const uint32 max_distance);
+static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const struct tm *start_date_p, const struct tm *end_date_p, const uint32 min_distance, const uint32 max_distance);
 
 static bool AddNumberToArray (json_t *array_p, const double64 value);
+
+static bool AddNonTrivialTimeToQuery (json_t *query_p, const struct tm *time_p, const char * const field_s, const char * const op_s);
 
 
 /*
@@ -127,7 +133,7 @@ Service *GetMartiSearchService (GrassrootsServer *grassroots_p)
 
 static const char *GetMartiSearchServiceName (const Service * UNUSED_PARAM (service_p))
 {
-	return "Marti search service";
+	return "MARTi search service";
 }
 
 
@@ -158,7 +164,7 @@ static ParameterSet *GetMartiSearchServiceParameters (Service *service_p, DataRe
 
 			if (AddCommonParameters (param_set_p, NULL, data_p))
 				{
-					Parameter *param_p  = EasyCreateAndAddUnsignedIntParameterToParameterSet (data_p, param_set_p, NULL, S_MAX_DISTANCE.npt_type, S_MAX_DISTANCE.npt_name_s, "Radius", "The maximum distance to find matching locations for", NULL, PL_ALL);
+					Parameter *param_p  = EasyCreateAndAddUnsignedIntParameterToParameterSet (data_p, param_set_p, NULL, S_MAX_DISTANCE.npt_name_s, "Radius", "The maximum distance to find matching locations for", NULL, PL_ALL);
 
 					if (param_p)
 						{
@@ -223,10 +229,10 @@ static ServiceJobSet *RunMartiSearchService (Service *service_p, ParameterSet *p
 	if (service_p -> se_jobs_p)
 		{
 			ServiceJob *job_p = GetServiceJobFromServiceJobSet (service_p -> se_jobs_p, 0);
+			OperationStatus status = OS_FAILED_TO_START;
 
 			LogParameterSet (param_set_p, job_p);
 
-			SetServiceJobStatus (job_p, OS_FAILED_TO_START);
 
 			if (param_set_p)
 				{
@@ -238,12 +244,95 @@ static ServiceJobSet *RunMartiSearchService (Service *service_p, ParameterSet *p
 						{
 							uint32 min_distance = 0;
 							uint32 max_distance = 1000;
-							json_t *query_p = GetSearchQuery (*latitude_p, *longitude_p, min_distance, max_distance);
+							const uint32 *max_distance_p = NULL;
+							const struct tm *start_date_p = NULL;
+							const struct tm *end_date_p = NULL;
+
+							GetCurrentUnsignedIntParameterValueFromParameterSet (param_set_p, S_MAX_DISTANCE.npt_name_s, &max_distance_p);
+
+							if (max_distance_p)
+								{
+									max_distance = *max_distance_p;
+								}
+
+							GetCurrentTimeParameterValueFromParameterSet (param_set_p, MA_START_DATE.npt_name_s, &start_date_p);
+							GetCurrentTimeParameterValueFromParameterSet (param_set_p, MA_END_DATE.npt_name_s, &end_date_p);
+
+							json_t *query_p = GetSearchQuery (*latitude_p, *longitude_p, start_date_p, end_date_p, min_distance, max_distance);
+
+							if (query_p)
+								{
+									bson_t *bson_query_p = ConvertJSONToBSON (query_p);
+
+									if (bson_query_p)
+										{
+											if (FindMatchingMongoDocumentsByBSON (data_p -> msd_mongo_p, bson_query_p, NULL, NULL))
+												{
+													json_t *results_p = GetAllExistingMongoResultsAsJSON (data_p -> msd_mongo_p);
+
+													if (results_p)
+														{
+															json_t *result_p;
+															size_t i;
+															size_t num_successes = 0;
+															const size_t num_results  = json_array_size (results_p);
+
+															json_array_foreach (results_p, i, result_p)
+																{
+																	MartiEntry *marti_p = GetMartiEntryFromJSON (result_p, data_p);
+
+																	if (marti_p)
+																		{
+																			json_t *dest_record_p = GetDataResourceAsJSONByParts (PROTOCOL_INLINE_S, NULL, marti_p -> me_name_s, result_p);
+
+																			if (dest_record_p)
+																				{
+																					if (AddResultToServiceJob (job_p, dest_record_p))
+																						{
+																							++ num_successes;
+																						}
+																					else
+																						{
+																							json_decref (dest_record_p);
+																						}
+																				}
+
+																			FreeMartiEntry (marti_p);
+																		}
+
+
+																}		/* json_array_foreach (results_p, i, result_p) */
+
+															if (num_successes == num_results)
+																{
+																	status = OS_SUCCEEDED;
+																}
+															else if (num_successes > 0)
+																{
+																	status = OS_PARTIALLY_SUCCEEDED;
+																}
+
+															json_decref (results_p);
+														}		/* if (results_p) */
+
+												}		/* if (FindMatchingMongoDocumentsByJSON (data_p -> msd_mongo_p, query_p, NULL, NULL)) */
+											else
+												{
+													status = OS_FAILED;
+												}
+
+											bson_free (bson_query_p);
+										}		/* if (bson_query_p) */
+
+
+									json_decref (query_p);
+								}
 
 						}		/* if (GetCommonParameters (param_set_p, &latitude_p, &longitude_p, &start_p, "search", job_p)) */
 
 				}		/* if (param_set_p) */
 
+			SetServiceJobStatus (job_p, status);
 
 			LogServiceJob (job_p);
 		}		/* if (service_p -> se_jobs_p) */
@@ -363,74 +452,96 @@ static ParameterSet *IsResourceForMartiSearchService (Service * UNUSED_PARAM (se
 		}
 	}
  */
-static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const uint32 min_distance, const uint32 max_distance)
+static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const struct tm *start_date_p, const struct tm *end_date_p, const uint32 min_distance, const uint32 max_distance)
 {
-	json_t *query_p = json_object ();
+	json_t *root_p = json_object ();
 
-	if (query_p)
+	if (root_p)
 		{
-			json_t *near_sphere_p = json_object ();
+			json_t *query_p = json_object ();
 
-			if (near_sphere_p)
+			if (query_p)
 				{
-					if (json_object_set_new (query_p, "$nearSphere", near_sphere_p) == 0)
+					if (json_object_set_new (root_p, ME_LOCATION_S, query_p) == 0)
 						{
-							json_t *geometry_p = json_object ();
+							json_t *near_sphere_p = json_object ();
 
-							if (geometry_p)
+							if (near_sphere_p)
 								{
-									if (json_object_set_new (near_sphere_p, "$geometry", geometry_p) == 0)
+									if (json_object_set_new (query_p, "$nearSphere", near_sphere_p) == 0)
 										{
-											if (SetJSONString (geometry_p, "type", "Point"))
-												{
-													json_t *coords_p = json_array ();
+											json_t *geometry_p = json_object ();
 
-													if (coords_p)
+											if (geometry_p)
+												{
+													if (json_object_set_new (near_sphere_p, "$geometry", geometry_p) == 0)
 														{
-															if (json_object_set_new (geometry_p, "coordinates", coords_p) == 0)
+															if (SetJSONString (geometry_p, "type", "Point"))
 																{
-																	if (AddNumberToArray (coords_p, longitude))
+																	json_t *coords_p = json_array ();
+
+																	if (coords_p)
 																		{
-																			if (AddNumberToArray (coords_p, latitude))
+																			if (json_object_set_new (geometry_p, "coordinates", coords_p) == 0)
 																				{
-																					if ((min_distance == 0) || (SetJSONInteger (near_sphere_p, "$minDistance", min_distance)))
+																					if (AddNumberToArray (coords_p, longitude))
 																						{
-																							if ((max_distance == 0) || (SetJSONInteger (near_sphere_p, "$maxDistance", max_distance)))
+																							if (AddNumberToArray (coords_p, latitude))
 																								{
-																									return query_p;
+																									if ((min_distance == 0) || (SetJSONInteger (near_sphere_p, "$minDistance", min_distance)))
+																										{
+																											if ((max_distance == 0) || (SetJSONInteger (near_sphere_p, "$maxDistance", max_distance)))
+																												{
+																													if (AddNonTrivialTimeToQuery (query_p, start_date_p, ME_END_DATE_S, "$lte"))
+																														{
+																															if (AddNonTrivialTimeToQuery (query_p, end_date_p, ME_START_DATE_S, "$gte"))
+																																{
+																																	return root_p;
+																																}
+
+																														}
+																												}
+
+																										}
 																								}
 
 																						}
+
+																				}
+																			else
+																				{
+																					json_decref (coords_p);
 																				}
 
 																		}
 
-																}
-															else
-																{
-																	json_decref (coords_p);
-																}
 
+																}		/* if (SetJSONString (geometry_p, "type", "Point")) */
 														}
+													else
+														{
+															json_decref (geometry_p);
+														}
+												}
 
-
-												}		/* if (SetJSONString (geometry_p, "type", "Point")) */
 										}
 									else
 										{
-											json_decref (geometry_p);
+											json_decref (near_sphere_p);
 										}
 								}
 
 						}
 					else
 						{
-							json_decref (near_sphere_p);
+							json_decref (query_p);
 						}
-				}
 
-			json_decref (query_p);
-		}		/* if (query_p) */
+				}		/* if (query_p) */
+
+			json_decref (root_p);
+		}
+
 
 	return NULL;
 }
@@ -451,6 +562,53 @@ static bool AddNumberToArray (json_t *array_p, const double64 value)
 				{
 					json_decref (number_p);
 				}
+		}
+
+	return success_flag;
+}
+
+
+static bool AddNonTrivialTimeToQuery (json_t *query_p, const struct tm *time_p, const char * const field_s, const char * const op_s)
+{
+	bool success_flag = false;
+
+	if (time_p)
+		{
+			char *time_s = GetTimeAsString (time_p, false, NULL);
+
+			if (time_s)
+				{
+					json_t *op_p = json_object ();
+
+					if (op_p)
+						{
+							if (SetJSONString (op_p, op_s, time_s))
+								{
+
+									if (json_object_set_new (query_p, field_s, op_p) == 0)
+										{
+											success_flag = true;
+										}
+									else
+										{
+
+										}
+
+								}
+
+							if (!success_flag)
+								{
+									json_decref (op_p);
+								}
+						}
+
+					FreeTimeString (time_s);
+				}
+
+		}		/* if (time_p) */
+	else
+		{
+			success_flag = true;
 		}
 
 	return success_flag;

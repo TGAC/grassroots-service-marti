@@ -20,10 +20,11 @@ static bool AddRealToJSONArray (json_t *array_p, const double64 value);
 
 static bool AddNonTrivialDateToJSON (json_t *json_p, const char * const key_s, const struct tm *date_p);
 
+static bool GetNonTrivialDateFromJSON (json_t *json_p, const char * const key_s, const struct tm **time_pp);
 
 
 MartiEntry *AllocateMartiEntry (bson_oid_t *id_p, User *user_p, PermissionsGroup *permissions_group_p, const bool owns_user_flag,
-																										const char *name_s, const char *marti_id_s, double64 latitutde, double64 longitutde,
+																										const char *name_s, const char *marti_id_s, double64 latitude, double64 longitude,
 																										struct tm *start_p, struct tm *end_p)
 {
 	if (marti_id_s)
@@ -72,8 +73,8 @@ MartiEntry *AllocateMartiEntry (bson_oid_t *id_p, User *user_p, PermissionsGroup
 																	entry_p -> me_owns_user_flag = owns_user_flag;
 																	entry_p -> me_name_s = copied_name_s;
 																	entry_p -> me_marti_id_s = copied_marti_id_s;
-																	entry_p -> me_latitude = latitutde;
-																	entry_p -> me_longitude = longitutde;
+																	entry_p -> me_latitude = latitude;
+																	entry_p -> me_longitude = longitude;
 																	entry_p -> me_start_p = copied_start_p;
 																	entry_p -> me_end_p = copied_end_p;
 
@@ -187,7 +188,7 @@ json_t *GetMartiEntryAsJSON (const MartiEntry *me_p, MartiServiceData *data_p)
 
 															if (coords_p)
 																{
-																	if (json_object_set_new (location_p, "coordinates", coords_p) == 0)
+																	if (json_object_set_new (location_p, ME_COORDINATES_S, coords_p) == 0)
 																		{
 																			/*
 																			 * For GeoJSON objects, the longitude comes first
@@ -236,6 +237,7 @@ json_t *GetMartiEntryAsJSON (const MartiEntry *me_p, MartiServiceData *data_p)
 
 MartiEntry *GetMartiEntryFromJSON (const json_t *json_p, const MartiServiceData *data_p)
 {
+	MartiEntry *marti_p = NULL;
 	bson_oid_t *id_p = GetNewUnitialisedBSONOid ();
 
 	if (id_p)
@@ -243,12 +245,78 @@ MartiEntry *GetMartiEntryFromJSON (const json_t *json_p, const MartiServiceData 
 			if (GetMongoIdFromJSON (json_p, id_p))
 				{
 					const char *name_s = GetJSONString (json_p, ME_NAME_S);
+
+					if (name_s)
+						{
+							const char *marti_id_s = GetJSONString (json_p, ME_MARTI_ID_S);
+
+							if (marti_id_s)
+								{
+									const json_t *location_p = json_object_get (json_p, ME_LOCATION_S);
+
+									if (location_p)
+										{
+											const json_t *coords_p = json_object_get (location_p, ME_COORDINATES_S);
+
+											if (coords_p)
+												{
+													if ((json_is_array (coords_p)) && (json_array_size (coords_p) == 2))
+														{
+															json_t *entry_p = json_array_get (coords_p, 0);
+
+															if (json_is_number (entry_p))
+																{
+																	double64 longitude = json_real_value (entry_p);
+
+																	entry_p = json_array_get (coords_p, 1);
+
+																	if (json_is_number (entry_p))
+																		{
+																			double64 latitude = json_real_value (entry_p);
+																			struct tm *start_p = NULL;
+
+																			if (GetNonTrivialDateFromJSON (json_p, ME_START_DATE_S, &start_p))
+																				{
+																					struct tm *end_p = NULL;
+
+																					if (GetNonTrivialDateFromJSON (json_p, ME_END_DATE_S, &end_p))
+																						{
+																							User *user_p = NULL;
+																							PermissionsGroup *permissions_group_p = NULL;
+
+																							marti_p = AllocateMartiEntry (id_p, user_p, permissions_group_p, true, name_s, marti_id_s, latitude, longitude, start_p, end_p);
+
+																							if (end_p)
+																								{
+																									FreeTime (end_p);
+																								}
+																						}
+
+																					if (start_p)
+																						{
+																							FreeTime (start_p);
+																						}
+																				}
+																		}
+
+
+																}
+														}
+												}
+										}
+								}
+
+						}
+
 				}
 
-			FreeBSONOid (id_p);
+			if (!marti_p)
+				{
+					FreeBSONOid (id_p);
+				}
 		}
 
-	return NULL;
+	return marti_p;
 }
 
 
@@ -292,6 +360,32 @@ static bool AddNonTrivialDateToJSON (json_t *json_p, const char * const key_s, c
 
 	return false;
 }
+
+
+static bool GetNonTrivialDateFromJSON (json_t *json_p, const char * const key_s, const struct tm **time_pp)
+{
+	bool success_flag = false;
+	char *time_s = GetJSONString (json_p, key_s);
+
+	if (time_s)
+		{
+			struct tm *time_p = GetTimeFromString (time_s);
+
+			if (time_p)
+				{
+					*time_pp = time_p;
+					success_flag = true;
+				}
+
+		}
+	else
+		{
+			success_flag = true;
+		}
+
+	return success_flag;
+}
+
 
 
 OperationStatus SaveMartiEntry (MartiEntry *marti_p, ServiceJob *job_p, MartiServiceData *data_p)

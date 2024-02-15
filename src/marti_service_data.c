@@ -69,13 +69,13 @@ bool ConfigureMartiService (MartiServiceData *data_p, GrassrootsServer *grassroo
 				{
 					if ((data_p -> msd_mongo_p = AllocateMongoTool (NULL, grassroots_p -> gs_mongo_manager_p)) != NULL)
 						{
-							if (SetMongoToolDatabase (data_p -> msd_mongo_p, data_p -> msd_database_s))
+							if (SetMongoToolDatabaseAndCollection (data_p -> msd_mongo_p, data_p -> msd_database_s, data_p -> msd_collection_s))
 								{
 									success_flag = true;
 								}
 							else
 								{
-									PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to set database to \"%s\"", data_p -> msd_database_s);
+									PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to set database to \"%s\" and collection to \"%s\"", data_p -> msd_database_s, data_p -> msd_collection_s);
 								}
 
 						}		/* if ((data_p -> msd_mongo_p = AllocateMongoTool (NULL, grassroots_p -> gs_mongo_manager_p)) != NULL) */

@@ -64,6 +64,7 @@ typedef struct
 MARTI_ENTRY_PREFIX const char *ME_NAME_S MARTI_ENTRY_CONCAT_VAL (CONTEXT_PREFIX_SCHEMA_ORG_S, "name");
 MARTI_ENTRY_PREFIX const char *ME_MARTI_ID_S MARTI_ENTRY_VAL ("marti_id");
 MARTI_ENTRY_PREFIX const char *ME_LOCATION_S MARTI_ENTRY_VAL ("location");
+MARTI_ENTRY_PREFIX const char *ME_COORDINATES_S MARTI_ENTRY_VAL ("coordinates");
 MARTI_ENTRY_PREFIX const char *ME_START_DATE_S MARTI_ENTRY_VAL ("start_date");
 MARTI_ENTRY_PREFIX const char *ME_END_DATE_S MARTI_ENTRY_VAL ("end_date");
 
@@ -77,7 +78,7 @@ extern "C"
 
 
 MARTI_SERVICE_LOCAL MartiEntry *AllocateMartiEntry (bson_oid_t *id_p, User *user_p, PermissionsGroup *permissions_group_p, const bool owns_user_flag,
-																										const char *name_s, const char *marti_id_s, double64 latitutde, double64 longitutde,
+																										const char *name_s, const char *marti_id_s, double64 latitude, double64 longitude,
 																										struct tm *start_p, struct tm *end_p);
 
 /**
