@@ -37,6 +37,7 @@ MartiServiceData *AllocateMartiServiceData  (void)
 			data_p -> msd_mongo_p = NULL;
 			data_p -> msd_database_s = NULL;
 			data_p -> msd_collection_s = NULL;
+			data_p -> msd_api_url_s = NULL;
 
 			return data_p;
 		}
@@ -71,6 +72,13 @@ bool ConfigureMartiService (MartiServiceData *data_p, GrassrootsServer *grassroo
 						{
 							if (SetMongoToolDatabaseAndCollection (data_p -> msd_mongo_p, data_p -> msd_database_s, data_p -> msd_collection_s))
 								{
+									data_p -> msd_api_url_s = GetJSONString (service_config_p, "marti_url");
+
+									if (! (data_p -> msd_api_url_s))
+										{
+											PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, service_config_p, "No MARTi API URL specified");
+										}
+
 									success_flag = true;
 								}
 							else

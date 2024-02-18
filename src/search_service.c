@@ -41,6 +41,7 @@
  */
 
 static NamedParameterType S_MAX_DISTANCE = { "Maximum Distance", PT_UNSIGNED_INT };
+static NamedParameterType S_END_DATE  = { "End Date", PT_TIME };
 
 
 
@@ -66,7 +67,7 @@ static bool CloseMartiSearchService (Service *service_p);
 
 static ServiceMetadata *GetMartiSearchServiceMetadata (Service *service_p);
 
-static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const struct tm *start_date_p, const struct tm *end_date_p, const uint32 min_distance, const uint32 max_distance);
+static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const struct tm *from_p, const struct tm *to_p, const uint32 min_distance, const uint32 max_distance);
 
 static bool AddNumberToArray (json_t *array_p, const double64 value);
 
@@ -164,7 +165,7 @@ static ParameterSet *GetMartiSearchServiceParameters (Service *service_p, DataRe
 
 			if (AddCommonParameters (param_set_p, NULL, data_p))
 				{
-					Parameter *param_p  = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, NULL, MA_END_DATE.npt_name_s, "End Date", "The ending date of when this sample was taken", NULL, PL_ALL);
+					Parameter *param_p  = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, NULL, S_END_DATE.npt_name_s, "End Date", "The ending date of when this sample was taken", NULL, PL_ALL);
 
 					if (param_p)
 						{
@@ -194,6 +195,7 @@ static bool GetMartiSearchServiceParameterTypesForNamedParameters (const Service
 	const NamedParameterType params [] =
 		{
 			S_MAX_DISTANCE,
+			S_END_DATE,
 			NULL
 		};
 
@@ -252,6 +254,7 @@ static ServiceJobSet *RunMartiSearchService (Service *service_p, ParameterSet *p
 							const uint32 *max_distance_p = NULL;
 							const struct tm *start_date_p = NULL;
 							const struct tm *end_date_p = NULL;
+							json_t *query_p = NULL;
 
 							GetCurrentUnsignedIntParameterValueFromParameterSet (param_set_p, S_MAX_DISTANCE.npt_name_s, &max_distance_p);
 
@@ -261,9 +264,9 @@ static ServiceJobSet *RunMartiSearchService (Service *service_p, ParameterSet *p
 								}
 
 							GetCurrentTimeParameterValueFromParameterSet (param_set_p, MA_START_DATE.npt_name_s, &start_date_p);
-							GetCurrentTimeParameterValueFromParameterSet (param_set_p, MA_END_DATE.npt_name_s, &end_date_p);
+							GetCurrentTimeParameterValueFromParameterSet (param_set_p, S_END_DATE.npt_name_s, &start_date_p);
 
-							json_t *query_p = GetSearchQuery (*latitude_p, *longitude_p, start_date_p, end_date_p, min_distance, max_distance);
+							query_p = GetSearchQuery (*latitude_p, *longitude_p, start_date_p, end_date_p, min_distance, max_distance);
 
 							if (query_p)
 								{
@@ -288,7 +291,7 @@ static ServiceJobSet *RunMartiSearchService (Service *service_p, ParameterSet *p
 
 																	if (marti_p)
 																		{
-																			json_t *dest_record_p = GetDataResourceAsJSONByParts (PROTOCOL_INLINE_S, NULL, marti_p -> me_name_s, result_p);
+																			json_t *dest_record_p = GetDataResourceAsJSONByParts (PROTOCOL_INLINE_S, NULL, marti_p -> me_sample_name_s, result_p);
 
 																			if (dest_record_p)
 																				{
@@ -457,7 +460,7 @@ static ParameterSet *IsResourceForMartiSearchService (Service * UNUSED_PARAM (se
 		}
 	}
  */
-static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const struct tm *start_date_p, const struct tm *end_date_p, const uint32 min_distance, const uint32 max_distance)
+static json_t *GetSearchQuery (const double64 latitude, const double64 longitude, const struct tm *from_p, const struct tm *to_p, const uint32 min_distance, const uint32 max_distance)
 {
 	json_t *root_p = json_object ();
 
@@ -497,9 +500,9 @@ static json_t *GetSearchQuery (const double64 latitude, const double64 longitude
 																										{
 																											if ((max_distance == 0) || (SetJSONInteger (near_sphere_p, "$maxDistance", max_distance)))
 																												{
-																													if (AddNonTrivialTimeToQuery (query_p, start_date_p, ME_END_DATE_S, "$lte"))
+																													if (AddNonTrivialTimeToQuery (query_p, from_p, ME_START_DATE_S, "$gte"))
 																														{
-																															if (AddNonTrivialTimeToQuery (query_p, end_date_p, ME_START_DATE_S, "$gte"))
+																															if (AddNonTrivialTimeToQuery (query_p, to_p, ME_START_DATE_S, "$lte"))
 																																{
 																																	return root_p;
 																																}

@@ -70,6 +70,12 @@ typedef struct /*MARTI_SERVICE_LOCAL*/ MartiServiceData
 	 */
 	const char *msd_collection_s;
 
+	/**
+	 * @private
+	 *
+	 * The web address of the MARTi server API endpoint.
+	 */
+	const char *msd_api_url_s;
 
 } MartiServiceData;
 
@@ -99,10 +105,11 @@ typedef struct /*MARTI_SERVICE_LOCAL*/ MartiServiceData
 MARTI_PREFIX NamedParameterType MA_ID MARTI_STRUCT_VAL ("Id", PT_STRING);
 MARTI_PREFIX NamedParameterType MA_NAME MARTI_STRUCT_VAL ("Name", PT_STRING);
 MARTI_PREFIX NamedParameterType MA_MARTI_ID MARTI_STRUCT_VAL ("MARTi Id", PT_STRING);
+MARTI_PREFIX NamedParameterType MA_SITE_NAME MARTI_STRUCT_VAL ("Site Name", PT_STRING);
+MARTI_PREFIX NamedParameterType MA_DESCRIPTION MARTI_STRUCT_VAL ("Description", PT_LARGE_STRING);
 MARTI_PREFIX NamedParameterType MA_LATITUDE MARTI_STRUCT_VAL ("Latitude", PT_SIGNED_REAL);
 MARTI_PREFIX NamedParameterType MA_LONGITUDE MARTI_STRUCT_VAL ("Longitude", PT_SIGNED_REAL);
 MARTI_PREFIX NamedParameterType MA_START_DATE MARTI_STRUCT_VAL ("Start Date", PT_TIME);
-MARTI_PREFIX NamedParameterType MA_END_DATE MARTI_STRUCT_VAL ("End Date", PT_TIME);
 
 
 

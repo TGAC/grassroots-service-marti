@@ -28,7 +28,7 @@ typedef struct
 
 	PermissionsGroup *me_permissions_group_p;
 
-	char *me_name_s;
+	char *me_sample_name_s;
 
 	char *me_marti_id_s;
 
@@ -36,9 +36,11 @@ typedef struct
 
 	double64 me_longitude;
 
-	struct tm *me_start_p;
+	struct tm *me_time_p;
 
-	struct tm *me_end_p;
+	char *me_site_name_s;
+
+	char *me_comments_s;
 
 } MartiEntry;
 
@@ -65,8 +67,9 @@ MARTI_ENTRY_PREFIX const char *ME_NAME_S MARTI_ENTRY_CONCAT_VAL (CONTEXT_PREFIX_
 MARTI_ENTRY_PREFIX const char *ME_MARTI_ID_S MARTI_ENTRY_VAL ("marti_id");
 MARTI_ENTRY_PREFIX const char *ME_LOCATION_S MARTI_ENTRY_VAL ("location");
 MARTI_ENTRY_PREFIX const char *ME_COORDINATES_S MARTI_ENTRY_VAL ("coordinates");
-MARTI_ENTRY_PREFIX const char *ME_START_DATE_S MARTI_ENTRY_VAL ("start_date");
-MARTI_ENTRY_PREFIX const char *ME_END_DATE_S MARTI_ENTRY_VAL ("end_date");
+MARTI_ENTRY_PREFIX const char *ME_START_DATE_S MARTI_ENTRY_VAL ("date");
+MARTI_ENTRY_PREFIX const char *ME_SITE_NAME_S MARTI_ENTRY_VAL ("site name");
+MARTI_ENTRY_PREFIX const char *ME_DESCRIPTION_S MARTI_ENTRY_VAL ("description");
 
 
 
@@ -78,8 +81,8 @@ extern "C"
 
 
 MARTI_SERVICE_LOCAL MartiEntry *AllocateMartiEntry (bson_oid_t *id_p, User *user_p, PermissionsGroup *permissions_group_p, const bool owns_user_flag,
-																										const char *name_s, const char *marti_id_s, double64 latitude, double64 longitude,
-																										struct tm *start_p, struct tm *end_p);
+																const char *sample_name_s, const char *marti_id_s, const char *site_name_s,
+																const char *description_s, double64 latitude, double64 longitude, const struct tm *time_p);
 
 /**
  * Free a given MartiEntry.
