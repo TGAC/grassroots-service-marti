@@ -12,21 +12,7 @@
 #include "marti_service_library.h"
 #include "service.h"
 #include "schema_keys.h"
-
-
-MARTI_SERVICE_PREFIX const char *PGS_CHROMOSOME_S MARTI_SERVICE_VAL ("chromosome");
-
-MARTI_SERVICE_PREFIX const char *PGS_MAPPING_POSITION_S MARTI_SERVICE_VAL ("mapping_position");
-
-MARTI_SERVICE_PREFIX const char *PGS_PARENT_A_S MARTI_SERVICE_VAL ("parent_a");
-
-MARTI_SERVICE_PREFIX const char *PGS_PARENT_B_S MARTI_SERVICE_VAL ("parent_b");
-
-MARTI_SERVICE_PREFIX const char *PGS_POPULATION_NAME_S MARTI_SERVICE_CONCAT_VAL (CONTEXT_PREFIX_SCHEMA_ORG_S, "name");
-
-MARTI_SERVICE_PREFIX const char *PGS_VARIETY_IDS_S MARTI_SERVICE_VAL ("variety_ids");
-
-MARTI_SERVICE_PREFIX const char *PGS_ESCAPED_DOT_S MARTI_SERVICE_VAL ("[dot]");
+#include "marti_entry.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -57,6 +43,10 @@ MARTI_SERVICE_API void ReleaseServices (ServicesArray *services_p);
 
 
 MARTI_SERVICE_LOCAL bool AddErrorMessage (ServiceJob *job_p, const json_t *value_p, const char *error_s, const int index);
+
+
+MARTI_SERVICE_LOCAL MartiEntry *GetMartiEntryByMartiIdString (const char * const marti_id_s, const MartiServiceData *data_p);
+
 
 #ifdef __cplusplus
 }

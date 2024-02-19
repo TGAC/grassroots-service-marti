@@ -20,6 +20,9 @@
 #define ALLOCATE_MARTI_SERVICE_TAGS (1)
 #include "marti_service.h"
 #include "marti_service_data.h"
+
+#include "marti_entry.h"
+
 #include "memory_allocations.h"
 #include "parameter.h"
 #include "service_job.h"
@@ -92,8 +95,19 @@ ServicesArray *GetServices (User *user_p, GrassrootsServer *grassroots_p)
 							* ((services_p -> sa_services_pp) + num_services) = search_service_p;
 						}
 
+					MartiServiceData *data_p =  (MartiServiceData *) ((* (services_p -> sa_services_pp)) -> se_data_p);
 
-					return services_p;
+					if (AddCollectionSingleIndex (data_p -> msd_mongo_p, data_p -> msd_database_s, data_p -> msd_collection_s, ME_LOCATION_S, "2dsphere", false, false))
+						{
+							return services_p;
+						}
+					else
+						{
+							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add index for db \"%s\" collection \"%s\" field \"%s\"", data_p -> msd_database_s, data_p -> msd_collection_s, ME_LOCATION_S);
+							FreeServicesArray (services_p);
+							return NULL;
+						}
+
 				}
 		}
 
@@ -116,5 +130,70 @@ ServicesArray *GetServices (User *user_p, GrassrootsServer *grassroots_p)
 void ReleaseServices (ServicesArray *services_p)
 {
 	FreeServicesArray (services_p);
+}
+
+
+MartiEntry *GetMartiEntryByMartiIdString (const char * const marti_id_s, const MartiServiceData *data_p)
+{
+	MartiEntry *marti_p = NULL;
+	MongoTool *tool_p = data_p -> msd_mongo_p;
+	bson_t *query_p = bson_new ();
+
+	if (query_p)
+		{
+			if (BSON_APPEND_UTF8 (query_p, ME_MARTI_ID_S, marti_id_s))
+				{
+					json_t *results_p = GetAllMongoResultsAsJSON (tool_p, query_p, NULL);
+
+					if (results_p)
+						{
+							if (json_is_array (results_p))
+								{
+									size_t num_results = json_array_size (results_p);
+
+									if (num_results == 1)
+										{
+											json_t *res_p = json_array_get (results_p, 0);
+
+											marti_p = GetMartiEntryFromJSON (res_p, data_p);
+
+											if (!marti_p)
+												{
+													PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, res_p, "failed to create MartiEntry for MARTi id \"%s\"", marti_id_s);
+												}
+
+										}		/* if (num_results == 1) */
+									else
+										{
+											PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, results_p, SIZET_FMT " results when searching for object_id_s with id \"%s\"", num_results, marti_id_s);
+										}
+
+								}		/* if (json_is_array (results_p) */
+							else
+								{
+									PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, results_p, "Results are not an array");
+								}
+
+							json_decref (results_p);
+						}		/* if (results_p) */
+					else
+						{
+							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to get results searching with marti id \"%s\"", marti_id_s);
+						}
+
+				}		/* if (BSON_APPEND_OID (query_p, MONGO_ID_S, id_p)) */
+			else
+				{
+					PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to populate query for marti id \"%s\"", marti_id_s);
+				}
+
+			bson_destroy (query_p);
+		}		/* if (query_p) */
+	else
+		{
+			PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to create query for marti id \"%s\"", marti_id_s);
+		}
+
+	return marti_p;
 }
 
