@@ -116,27 +116,45 @@ bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group
 
 	if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LATITUDE.npt_type, MA_LATITUDE.npt_name_s, "Latitude", "The latitude of this location", NULL, PL_ALL)) != NULL)
 		{
-			param_p -> pa_required_flag = true;
+			const char *precision_s = "8";
 
-			if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LONGITUDE.npt_type, MA_LONGITUDE.npt_name_s, "Longitude", "The longitude of this location", NULL, PL_ALL)) != NULL)
+			if (AddParameterKeyStringValuePair (param_p, PA_DOUBLE_PRECISION_S, precision_s))
 				{
 					param_p -> pa_required_flag = true;
 
-					if ((param_p = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, param_group_p, MA_START_DATE.npt_name_s, "Start Date", "The starting date of when this sample was taken", NULL, PL_ALL)) != NULL)
+					if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LONGITUDE.npt_type, MA_LONGITUDE.npt_name_s, "Longitude", "The longitude of this location", NULL, PL_ALL)) != NULL)
 						{
-							param_p -> pa_required_flag = true;
+							if (AddParameterKeyStringValuePair (param_p, PA_DOUBLE_PRECISION_S, precision_s))
+								{
+									param_p -> pa_required_flag = true;
 
-							success_flag = true;
+									if ((param_p = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, param_group_p, MA_START_DATE.npt_name_s, "Start Date", "The starting date of when this sample was taken", NULL, PL_ALL)) != NULL)
+										{
+											param_p -> pa_required_flag = true;
+
+											success_flag = true;
+										}
+									else
+										{
+											PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add %s parameter", MA_START_DATE.npt_name_s);
+										}
+
+								}		/* if (AddParameterKeyStringValuePair (param_p, PA_DOUBLE_PRECISION_S, precision_s)) */
+							else
+								{
+									PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to set precision of %s for %s parameter", precision_s, MA_LONGITUDE.npt_name_s);
+								}
+
 						}
 					else
 						{
-							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add %s parameter", MA_START_DATE.npt_name_s);
+							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add %s parameter", MA_LONGITUDE.npt_name_s);
 						}
 
-				}
+				}		/* if (AddParameterKeyStringValuePair (param_p, PA_DOUBLE_PRECISION_S, precision_s)) */
 			else
 				{
-					PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add %s parameter", MA_LONGITUDE.npt_name_s);
+					PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to set precision of %s for %s parameter", precision_s, MA_LATITUDE.npt_name_s);
 				}
 
 		}
