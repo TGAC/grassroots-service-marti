@@ -92,16 +92,16 @@ bool ConfigureMartiService (MartiServiceData *data_p, GrassrootsServer *grassroo
 							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to allocate MongoTool");
 						}
 
-				} 	/* if ((data_p -> msd_markers_collection_s = GetJSONString (service_config_p, "markers_collection")) != NULL) */
+				} 	/* if ((data_p -> msd_collection_s = GetJSONString (service_config_p, "collection")) != NULL) */
 			else
 				{
-					PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, service_config_p, "Failed to get collection");
+					PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, service_config_p, "No collection specified");
 				}
 
 		}		/* if (data_p -> psd_database_s) */
 	else
 		{
-			PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, service_config_p, "Failed to get database");
+			PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, service_config_p, "No database specified");
 		}
 
 	return success_flag;
