@@ -29,6 +29,7 @@
 #define MARTI_SERVICE_DATA_H_
 
 #include "marti_service_library.h"
+
 #include "jansson.h"
 
 #include "service.h"
@@ -80,6 +81,9 @@ typedef struct /*MARTI_SERVICE_LOCAL*/ MartiServiceData
 } MartiServiceData;
 
 
+/* forward declaration */
+struct MartiEntry;
+
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
@@ -127,7 +131,7 @@ MARTI_SERVICE_LOCAL void FreeMartiServiceData (MartiServiceData *data_p);
 MARTI_SERVICE_LOCAL bool ConfigureMartiService (MartiServiceData *data_p, GrassrootsServer *grassroots_p);
 
 
-MARTI_SERVICE_LOCAL bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, ServiceData *data_p);
+MARTI_SERVICE_LOCAL bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, struct MartiEntry *active_entry_p, ServiceData *data_p);
 
 
 MARTI_SERVICE_LOCAL bool GetCommonParameters (ParameterSet *param_set_p, const double64 **latitude_pp, const double64 **longitude_pp, const struct tm **start_pp, const char * const name_s, ServiceJob *job_p);

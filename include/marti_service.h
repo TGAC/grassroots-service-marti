@@ -48,6 +48,9 @@ MARTI_SERVICE_LOCAL bool AddErrorMessage (ServiceJob *job_p, const json_t *value
 MARTI_SERVICE_LOCAL MartiEntry *GetMartiEntryByMartiIdString (const char * const marti_id_s, const MartiServiceData *data_p);
 
 
+MARTI_SERVICE_LOCAL MartiEntry *GetMartiEntryByMongoIdString (const char * const mongo_id_s, const MartiServiceData *data_p);
+
+
 #ifdef __cplusplus
 }
 #endif

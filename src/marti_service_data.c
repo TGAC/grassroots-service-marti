@@ -21,6 +21,7 @@
  */
 
 #include "marti_service_data.h"
+#include "marti_entry.h"
 
 #include "streams.h"
 
@@ -109,12 +110,12 @@ bool ConfigureMartiService (MartiServiceData *data_p, GrassrootsServer *grassroo
 
 
 
-bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, ServiceData *data_p)
+bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, struct MartiEntry *marti_p, ServiceData *data_p)
 {
 	bool success_flag = false;
 	Parameter *param_p = NULL;
 
-	if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LATITUDE.npt_type, MA_LATITUDE.npt_name_s, "Latitude", "The latitude of this location", NULL, PL_ALL)) != NULL)
+	if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LATITUDE.npt_type, MA_LATITUDE.npt_name_s, "Latitude", "The latitude of this location", marti_p ? & (marti_p -> me_latitude) : NULL, PL_ALL)) != NULL)
 		{
 			const char *precision_s = "8";
 
@@ -122,13 +123,13 @@ bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group
 				{
 					param_p -> pa_required_flag = true;
 
-					if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LONGITUDE.npt_type, MA_LONGITUDE.npt_name_s, "Longitude", "The longitude of this location", NULL, PL_ALL)) != NULL)
+					if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LONGITUDE.npt_type, MA_LONGITUDE.npt_name_s, "Longitude", "The longitude of this location", marti_p ? & (marti_p -> me_longitude) : NULL, PL_ALL)) != NULL)
 						{
 							if (AddParameterKeyStringValuePair (param_p, PA_DOUBLE_PRECISION_S, precision_s))
 								{
 									param_p -> pa_required_flag = true;
 
-									if ((param_p = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, param_group_p, MA_START_DATE.npt_name_s, "Start Date", "The starting date of when this sample was taken", NULL, PL_ALL)) != NULL)
+									if ((param_p = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, param_group_p, MA_START_DATE.npt_name_s, "Start Date", "The starting date of when this sample was taken", marti_p ? marti_p -> me_time_p : NULL, PL_ALL)) != NULL)
 										{
 											param_p -> pa_required_flag = true;
 
