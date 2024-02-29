@@ -150,7 +150,7 @@ static const char *GetMartiSubmissionServiceAlias (const Service * UNUSED_PARAM 
 
 static const char *GetMartiSubmissionServiceInformationUri (const Service * UNUSED_PARAM (service_p))
 {
-	return NULL;
+	return "https://www.earlham.ac.uk/marti";
 }
 
 

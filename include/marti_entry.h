@@ -18,6 +18,22 @@
 #include "permission.h"
 
 
+/**
+ * The medium in which the sample was taken
+ */
+typedef enum SampleType
+{
+	/** An airborne sample e.g. from nanopore sequencing */
+	ST_AIRBORNE,
+
+	/** A soil-based sample */
+	ST_SOIL,
+
+	/** The number of different SampleTypes */
+	ST_NUM_TYPES
+};
+
+
 typedef struct
 {
 	bson_oid_t *me_id_p;

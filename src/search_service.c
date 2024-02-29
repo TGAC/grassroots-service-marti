@@ -140,7 +140,7 @@ static const char *GetMartiSearchServiceName (const Service * UNUSED_PARAM (serv
 
 static const char *GetMartiSearchServiceDescription (const Service * UNUSED_PARAM (service_p))
 {
-	return "A service to get the parental data for given markers and populations";
+	return "A service to search for metagenomic samples using nanopore sequencing as part of MARTi.";
 }
 
 
@@ -151,7 +151,7 @@ static const char *GetMartiSearchServiceAlias (const Service * UNUSED_PARAM (ser
 
 static const char *GetMartiSearchServiceInformationUri (const Service * UNUSED_PARAM (service_p))
 {
-	return NULL;
+	return "https://www.earlham.ac.uk/marti";
 }
 
 
