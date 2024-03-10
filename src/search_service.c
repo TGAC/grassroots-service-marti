@@ -41,8 +41,7 @@
  */
 
 static NamedParameterType S_MAX_DISTANCE = { "Maximum Distance", PT_UNSIGNED_INT };
-static NamedParameterType S_END_DATE  = { "End Date", PT_TIME };
-
+static NamedParameterType S_END_DATE = { "End Date", PT_TIME };
 
 
 static const char *GetMartiSearchServiceName (const Service *service_p);
@@ -163,19 +162,14 @@ static ParameterSet *GetMartiSearchServiceParameters (Service *service_p, DataRe
 		{
 			ServiceData *data_p = service_p -> se_data_p;
 
-			if (AddCommonParameters (param_set_p, NULL, data_p))
+			if (AddCommonParameters (param_set_p, NULL, NULL, data_p))
 				{
-					Parameter *param_p  = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, NULL, S_END_DATE.npt_name_s, "End Date", "The ending date of when this sample was taken", NULL, PL_ALL);
+					Parameter *param_p = EasyCreateAndAddUnsignedIntParameterToParameterSet (data_p, param_set_p, NULL, S_MAX_DISTANCE.npt_name_s, "Radius", "The maximum distance, in metres, to find matching locations for", NULL, PL_ALL);
 
 					if (param_p)
 						{
-							if ((param_p = EasyCreateAndAddUnsignedIntParameterToParameterSet (data_p, param_set_p, NULL, S_MAX_DISTANCE.npt_name_s, "Radius", "The maximum distance to find matching locations for", NULL, PL_ALL)) != NULL)
-								{
-									return param_set_p;
-								}
-
+							return param_set_p;
 						}
-
 				}
 
 			FreeParameterSet (param_set_p);

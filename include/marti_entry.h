@@ -34,7 +34,7 @@ typedef enum SampleType
 };
 
 
-typedef struct
+typedef struct MartiEntry
 {
 	bson_oid_t *me_id_p;
 

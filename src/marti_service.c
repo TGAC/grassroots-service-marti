@@ -52,6 +52,8 @@
  * STATIC PROTOTYPES
  */
 
+static MartiEntry *GetMartiEntryByQuery (bson_t *query_p, const MartiServiceData *data_p);
+
 
 /*
  * API FUNCTIONS
@@ -136,52 +138,14 @@ void ReleaseServices (ServicesArray *services_p)
 MartiEntry *GetMartiEntryByMartiIdString (const char * const marti_id_s, const MartiServiceData *data_p)
 {
 	MartiEntry *marti_p = NULL;
-	MongoTool *tool_p = data_p -> msd_mongo_p;
 	bson_t *query_p = bson_new ();
 
 	if (query_p)
 		{
 			if (BSON_APPEND_UTF8 (query_p, ME_MARTI_ID_S, marti_id_s))
 				{
-					json_t *results_p = GetAllMongoResultsAsJSON (tool_p, query_p, NULL);
-
-					if (results_p)
-						{
-							if (json_is_array (results_p))
-								{
-									size_t num_results = json_array_size (results_p);
-
-									if (num_results == 1)
-										{
-											json_t *res_p = json_array_get (results_p, 0);
-
-											marti_p = GetMartiEntryFromJSON (res_p, data_p);
-
-											if (!marti_p)
-												{
-													PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, res_p, "failed to create MartiEntry for MARTi id \"%s\"", marti_id_s);
-												}
-
-										}		/* if (num_results == 1) */
-									else
-										{
-											PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, results_p, SIZET_FMT " results when searching for object_id_s with id \"%s\"", num_results, marti_id_s);
-										}
-
-								}		/* if (json_is_array (results_p) */
-							else
-								{
-									PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, results_p, "Results are not an array");
-								}
-
-							json_decref (results_p);
-						}		/* if (results_p) */
-					else
-						{
-							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to get results searching with marti id \"%s\"", marti_id_s);
-						}
-
-				}		/* if (BSON_APPEND_OID (query_p, MONGO_ID_S, id_p)) */
+					marti_p = GetMartiEntryByQuery (query_p, data_p);
+				}		/* if (BSON_APPEND_UTF8 (query_p, ME_MARTI_ID_S, marti_id_s) */
 			else
 				{
 					PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to populate query for marti id \"%s\"", marti_id_s);
@@ -197,3 +161,98 @@ MartiEntry *GetMartiEntryByMartiIdString (const char * const marti_id_s, const M
 	return marti_p;
 }
 
+
+MartiEntry *GetMartiEntryByMongoIdString (const char * const id_s, const MartiServiceData *data_p)
+{
+	MartiEntry *marti_p = NULL;
+	bson_t *query_p = bson_new ();
+
+	if (query_p)
+		{
+			if (bson_oid_is_valid (id_s, strlen (id_s)))
+				{
+					bson_oid_t oid;
+					bson_oid_init_from_string (&oid, id_s);
+
+					if (BSON_APPEND_OID (query_p, MONGO_ID_S, &oid))
+						{
+							marti_p = GetMartiEntryByQuery (query_p, data_p);
+						}		/* if (BSON_APPEND_UTF8 (query_p, MONGO_ID_S, marti_id_s) */
+					else
+						{
+							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to populate query for id \"%s\"", id_s);
+						}
+				}
+			else
+				{
+					PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "\"%s\" is not valid oid", id_s);
+				}
+
+			bson_destroy (query_p);
+		}		/* if (query_p) */
+	else
+		{
+			PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to create query for mongo id \"%s\"", id_s);
+		}
+
+	return marti_p;
+}
+
+
+
+static MartiEntry *GetMartiEntryByQuery (bson_t *query_p, const MartiServiceData *data_p)
+{
+	MartiEntry *marti_p = NULL;
+	MongoTool *tool_p = data_p -> msd_mongo_p;
+	json_t *results_p = GetAllMongoResultsAsJSON (tool_p, query_p, NULL);
+
+	if (results_p)
+		{
+			if (json_is_array (results_p))
+				{
+					size_t num_results = json_array_size (results_p);
+
+					if (num_results == 1)
+						{
+							json_t *res_p = json_array_get (results_p, 0);
+
+							marti_p = GetMartiEntryFromJSON (res_p, data_p);
+
+							if (!marti_p)
+								{
+									PrintBSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, query_p, "Failed to create MartiEntry searching with query");
+								}
+
+						}		/* if (num_results == 1) */
+					else
+						{
+							char *query_s = bson_as_json (query_p, NULL);
+
+							if (query_s)
+								{
+									PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, results_p, SIZET_FMT " results when searching with \"%s\"", num_results, query_s);
+									bson_free (query_s);
+								}
+							else
+								{
+									PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, results_p, SIZET_FMT " results when searching", num_results);
+								}
+
+						}
+
+				}		/* if (json_is_array (results_p) */
+			else
+				{
+					PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, results_p, "Results are not an array");
+				}
+
+			json_decref (results_p);
+		}		/* if (results_p) */
+	else
+		{
+			PrintBSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, query_p, "Failed to get results searching with query");
+		}
+
+
+	return marti_p;
+}

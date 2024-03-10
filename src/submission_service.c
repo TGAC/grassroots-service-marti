@@ -163,8 +163,19 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 			ServiceData *data_p = service_p -> se_data_p;
 			MartiServiceData *marti_data_p = (MartiServiceData *) data_p;
 			Parameter *param_p = NULL;
-			const char *id_s = NULL;
+			char *id_s = NULL;
 			MartiEntry *active_entry_p = GetMartiEntryFromResource (resource_p, marti_data_p);
+
+			if (active_entry_p)
+				{
+					id_s = GetBSONOidAsString (active_entry_p -> me_id_p);
+
+					if (!id_s)
+						{
+							PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "GetBSONOidAsString () failed for \"%s\"", active_entry_p -> me_sample_name_s);
+						}
+				}
+
 
 			if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_ID.npt_type, MA_ID.npt_name_s, "Load Sample", "Edit an existing MARTi sample", id_s, PL_ALL)) != NULL)
 				{
@@ -179,19 +190,25 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 							 */
 							param_p -> pa_refresh_service_flag = true;
 
-							if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_NAME.npt_type, MA_NAME.npt_name_s, "Name", "The name of this sample", NULL, PL_ALL)) != NULL)
+							if (id_s)
+								{
+									FreeBSONOidString (id_s);
+									id_s = NULL;
+								}
+
+							if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_NAME.npt_type, MA_NAME.npt_name_s, "Name", "The name of this sample", active_entry_p ? active_entry_p -> me_sample_name_s : NULL, PL_ALL)) != NULL)
 								{
 									param_p -> pa_required_flag = true;
 
-									if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_MARTI_ID.npt_type, MA_MARTI_ID.npt_name_s, "MARTi ID", "The ID for this sample within MARTi", NULL, PL_ALL)) != NULL)
+									if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_MARTI_ID.npt_type, MA_MARTI_ID.npt_name_s, "MARTi ID", "The ID for this sample within MARTi", active_entry_p ? active_entry_p -> me_marti_id_s : NULL, PL_ALL)) != NULL)
 										{
 											param_p -> pa_required_flag = true;
 
-											if (AddCommonParameters (param_set_p, NULL, data_p))
+											if (AddCommonParameters (param_set_p, NULL, active_entry_p, data_p))
 												{
-													if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_SITE_NAME.npt_type, MA_SITE_NAME.npt_name_s, "Site", "The name of the location where this sample was taken", NULL, PL_ALL)) != NULL)
+													if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_SITE_NAME.npt_type, MA_SITE_NAME.npt_name_s, "Site", "The name of the location where this sample was taken", active_entry_p ? active_entry_p -> me_site_name_s : NULL, PL_ALL)) != NULL)
 														{
-															if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_DESCRIPTION.npt_type, MA_DESCRIPTION.npt_name_s, "Comments", "Any comments or description of this sample", NULL, PL_ALL)) != NULL)
+															if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_DESCRIPTION.npt_type, MA_DESCRIPTION.npt_name_s, "Comments", "Any comments or description of this sample", active_entry_p ? active_entry_p -> me_comments_s : NULL, PL_ALL)) != NULL)
 																{
 																	return param_set_p;
 																}
@@ -674,7 +691,7 @@ static MartiEntry *GetMartiEntryFromResource (DataResource *resource_p, MartiSer
 
 					if (params_json_p)
 						{
-							const char *marti_id_s =  NULL;
+							const char *id_s =  NULL;
 							const size_t num_entries = json_array_size (params_json_p);
 							size_t i;
 
@@ -685,13 +702,13 @@ static MartiEntry *GetMartiEntryFromResource (DataResource *resource_p, MartiSer
 
 									if (name_s)
 										{
-											if (strcmp (name_s, MA_MARTI_ID.npt_name_s) == 0)
+											if (strcmp (name_s, MA_ID.npt_name_s) == 0)
 												{
-													marti_id_s = GetJSONString (param_json_p, PARAM_CURRENT_VALUE_S);
+													id_s = GetJSONString (param_json_p, PARAM_CURRENT_VALUE_S);
 
-													if (!marti_id_s)
+													if (!id_s)
 														{
-															PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, param_json_p, "Failed to get \"%s\" from \"%s\"", PARAM_CURRENT_VALUE_S, MA_MARTI_ID.npt_name_s);
+															PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, param_json_p, "Failed to get \"%s\" from \"%s\"", PARAM_CURRENT_VALUE_S, MA_ID.npt_name_s);
 														}
 
 													/* force exit from loop */
@@ -704,13 +721,13 @@ static MartiEntry *GetMartiEntryFromResource (DataResource *resource_p, MartiSer
 							/*
 							 * Do we have an existing study id?
 							 */
-							if (marti_id_s)
+							if (id_s)
 								{
-									marti_p = GetMartiEntryByMartiIdString (marti_id_s, data_p);
+									marti_p = GetMartiEntryByMongoIdString (id_s, data_p);
 
 									if (!marti_p)
 										{
-											PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, params_json_p, "Failed to load MartiEntry with MARTi id \"%s\"", marti_id_s);
+											PrintJSONToErrors (STM_LEVEL_WARNING, __FILE__, __LINE__, params_json_p, "Failed to load MartiEntry with mongo id \"%s\"", id_s);
 										}
 
 								}		/* if (study_id_s) */
