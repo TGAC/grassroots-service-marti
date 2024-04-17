@@ -426,8 +426,22 @@ OperationStatus SaveMartiEntry (MartiEntry *marti_p, ServiceJob *job_p, MartiSer
 
 									if (url_s)
 										{
-											if (!SetJSONString (marti_json_p, CONTEXT_PREFIX_SCHEMA_ORG_S "url", url_s))
+											if (SetJSONString (marti_json_p, CONTEXT_PREFIX_SCHEMA_ORG_S "url", url_s))
 												{
+													json_t *provider_p = json_object_get (data_p -> msd_base_data.sd_config_p, SERVER_PROVIDER_S);
+
+													if (provider_p)
+														{
+															if (json_object_set (marti_json_p, SERVER_PROVIDER_S, provider_p) != 0)
+																{
+																	PrintJSONToErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, marti_json_p, "Failed to add provider");
+																	success_flag = false;
+																}
+														}
+												}
+											else
+												{
+
 													success_flag = false;
 												}
 										}
