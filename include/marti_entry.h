@@ -58,6 +58,14 @@ typedef struct MartiEntry
 
 	char *me_comments_s;
 
+	/**
+	 * A NULL terminated array of taxa ids
+	 * for this entry.
+	 */
+	char **me_taxa_ss;
+
+
+
 } MartiEntry;
 
 
@@ -86,6 +94,7 @@ MARTI_ENTRY_PREFIX const char *ME_COORDINATES_S MARTI_ENTRY_VAL ("coordinates");
 MARTI_ENTRY_PREFIX const char *ME_START_DATE_S MARTI_ENTRY_VAL ("date");
 MARTI_ENTRY_PREFIX const char *ME_SITE_NAME_S MARTI_ENTRY_VAL ("site_name");
 MARTI_ENTRY_PREFIX const char *ME_DESCRIPTION_S MARTI_ENTRY_VAL ("description");
+MARTI_ENTRY_PREFIX const char *ME_TAXA_S MARTI_ENTRY_VAL ("taxa");
 
 
 
@@ -98,7 +107,8 @@ extern "C"
 
 MARTI_SERVICE_LOCAL MartiEntry *AllocateMartiEntry (bson_oid_t *id_p, User *user_p, PermissionsGroup *permissions_group_p, const bool owns_user_flag,
 																const char *sample_name_s, const char *marti_id_s, const char *site_name_s,
-																const char *description_s, double64 latitude, double64 longitude, const struct tm *time_p);
+																const char *description_s, double64 latitude, double64 longitude, const struct tm *time_p, const char **taxa_ss,
+																const size_t num_taxa);
 
 /**
  * Free a given MartiEntry.
@@ -114,7 +124,7 @@ MARTI_SERVICE_LOCAL void FreeMartiEntry (MartiEntry *marti_p);
 MARTI_SERVICE_LOCAL MartiEntry *GetMartiEntryFromJSON (const json_t *json_p, const MartiServiceData *data_p);
 
 
-MARTI_SERVICE_LOCAL OperationStatus SaveMartiEntry (MartiEntry *location_p, ServiceJob *job_p, MartiServiceData *data_p);
+MARTI_SERVICE_LOCAL OperationStatus SaveMartiEntry (MartiEntry *entry_p, ServiceJob *job_p, MartiServiceData *data_p);
 
 
 #ifdef __cplusplus
