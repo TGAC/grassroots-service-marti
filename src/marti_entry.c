@@ -55,7 +55,7 @@ MartiEntry *AllocateMartiEntry (bson_oid_t *id_p, User *user_p, PermissionsGroup
 														{
 															char **copied_taxa_ss = NULL;
 
-															if ((copied_taxa_ss == NULL) || (copied_taxa_ss = CopyStringArray (taxa_ss, num_taxa)))
+															if ((taxa_ss == NULL)|| (copied_taxa_ss = CopyStringArray (taxa_ss, num_taxa)))
 																{
 																	bool alloc_perms_flag = false;
 
@@ -377,7 +377,8 @@ MartiEntry *GetMartiEntryFromJSON (const json_t *json_p, const MartiServiceData 
 																								}
 																						}
 
-																					marti_p = AllocateMartiEntry (id_p, user_p, permissions_group_p, true, name_s, marti_id_s, site_name_s, description_s, latitude, longitude, start_p);
+																					marti_p = AllocateMartiEntry (id_p, user_p, permissions_group_p, true, name_s, marti_id_s, site_name_s,
+																																				description_s, latitude, longitude, start_p, taxa_ss, num_taxa);
 
 																					if (start_p)
 																						{
@@ -491,8 +492,6 @@ OperationStatus SaveMartiEntry (MartiEntry *marti_p, ServiceJob *job_p, MartiSer
 					if (SaveMongoDataWithTimestamp (data_p -> msd_mongo_p, marti_json_p, data_p -> msd_collection_s,
 																					selector_p, MONGO_TIMESTAMP_S))
 						{
-							bool success_flag = true;
-
 							if (data_p -> msd_api_url_s)
 								{
 									char *url_s = ConcatenateStrings (data_p -> msd_api_url_s, marti_p -> me_marti_id_s);

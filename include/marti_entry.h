@@ -31,7 +31,7 @@ typedef enum SampleType
 
 	/** The number of different SampleTypes */
 	ST_NUM_TYPES
-};
+} SampleType;
 
 
 typedef struct MartiEntry

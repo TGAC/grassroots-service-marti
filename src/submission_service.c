@@ -34,6 +34,8 @@
 #include "string_parameter.h"
 #include "double_parameter.h"
 #include "time_parameter.h"
+#include "string_array_parameter.h"
+
 #include "marti_entry.h"
 
 
@@ -359,13 +361,17 @@ static ServiceJobSet *RunMartiSubmissionService (Service *service_p, ParameterSe
 															if (GetCurrentStringParameterValueFromParameterSet (param_set_p, MA_SITE_NAME.npt_name_s, &site_name_s))
 																{
 																	const char *description_s = NULL;
+																	const char **taxa_ss = NULL;
+																	size_t num_taxa = 0;
 
 																	GetCurrentStringParameterValueFromParameterSet (param_set_p, MA_DESCRIPTION.npt_name_s, &description_s);
 
 
+																	GetCurrentStringArrayParameterValuesFromParameterSet (param_set_p, MA_TAXA.npt_name_s, &taxa_ss, &num_taxa);
+
 																	entry_p = AllocateMartiEntry (id_p, user_p, permissions_group_p, owns_user_flag,
 																																name_s, marti_id_s, site_name_s, description_s, *latitude_p, *longitude_p,
-																																start_p);
+																																start_p, taxa_ss, num_taxa);
 
 
 
