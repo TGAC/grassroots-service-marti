@@ -210,9 +210,25 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 												{
 													if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_SITE_NAME.npt_type, MA_SITE_NAME.npt_name_s, "Site", "The name of the location where this sample was taken", active_entry_p ? active_entry_p -> me_site_name_s : NULL, PL_ALL)) != NULL)
 														{
-															if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_DESCRIPTION.npt_type, MA_DESCRIPTION.npt_name_s, "Comments", "Any comments or description of this sample", active_entry_p ? active_entry_p -> me_comments_s : NULL, PL_ALL)) != NULL)
+															if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_DESCRIPTION.npt_type, MA_DESCRIPTION.npt_name_s, "Comments", "Any additional information about this sample", active_entry_p ? active_entry_p -> me_comments_s : NULL, PL_ALL)) != NULL)
 																{
-																	return param_set_p;
+																	char **taxa_ss = NULL;
+																	size_t num_taxa = 0;
+
+																	if (active_entry_p)
+																		{
+																			taxa_ss = active_entry_p -> me_taxa_ss;
+																			num_taxa = active_entry_p -> me_num_taxa;
+																		}
+
+																	if ((param_p = EasyCreateAndAddStringArrayParameterToParameterSet (data_p, param_set_p, NULL, MA_TAXA.npt_name_s, "Taxononmy IDs", "The taxa ids, and their forebears, for this sample", taxa_ss, num_taxa, PL_ALL)) != NULL)
+																		{
+																			return param_set_p;
+																		}
+																	else
+																		{
+																			PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add %s parameter", MA_TAXA.npt_name_s);
+																		}
 																}
 															else
 																{
@@ -263,6 +279,7 @@ static bool GetMartiSubmissionServiceParameterTypesForNamedParameters (const Ser
 			MA_MARTI_ID,
 			MA_SITE_NAME,
 			MA_DESCRIPTION,
+			MA_TAXA,
 			NULL
 		};
 

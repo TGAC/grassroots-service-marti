@@ -58,13 +58,9 @@ typedef struct MartiEntry
 
 	char *me_comments_s;
 
-	/**
-	 * A NULL terminated array of taxa ids
-	 * for this entry.
-	 */
 	char **me_taxa_ss;
 
-
+	size_t me_num_taxa;
 
 } MartiEntry;
 

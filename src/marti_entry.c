@@ -21,7 +21,7 @@ static bool AddRealToJSONArray (json_t *array_p, const double64 value);
 
 static bool AddNonTrivialDateToJSON (json_t *json_p, const char * const key_s, const struct tm *date_p);
 
-static bool GetNonTrivialDateFromJSON (json_t *json_p, const char * const key_s, const struct tm **time_pp);
+static bool GetNonTrivialDateFromJSON (json_t *json_p, const char * const key_s, struct tm **time_pp);
 
 
 MartiEntry *AllocateMartiEntry (bson_oid_t *id_p, User *user_p, PermissionsGroup *permissions_group_p, const bool owns_user_flag,
@@ -88,7 +88,7 @@ MartiEntry *AllocateMartiEntry (bson_oid_t *id_p, User *user_p, PermissionsGroup
 																					entry_p -> me_site_name_s = copied_site_name_s;
 																					entry_p -> me_comments_s = copied_description_s;
 																					entry_p -> me_taxa_ss = copied_taxa_ss;
-
+																					entry_p -> me_num_taxa = num_taxa;
 
 																					return entry_p;
 																				}
@@ -451,7 +451,7 @@ static bool AddNonTrivialDateToJSON (json_t *json_p, const char * const key_s, c
 }
 
 
-static bool GetNonTrivialDateFromJSON (json_t *json_p, const char * const key_s, const struct tm **time_pp)
+static bool GetNonTrivialDateFromJSON (json_t *json_p, const char * const key_s, struct tm **time_pp)
 {
 	bool success_flag = false;
 	const char *time_s = GetJSONString (json_p, key_s);
