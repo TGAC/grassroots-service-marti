@@ -167,6 +167,7 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 			Parameter *param_p = NULL;
 			char *id_s = NULL;
 			MartiEntry *active_entry_p = GetMartiEntryFromResource (resource_p, marti_data_p);
+			ParameterGroup *main_group_p = CreateAndAddParameterGroupToParameterSet ("Data", false, data_p, param_set_p);
 
 			if (active_entry_p)
 				{
@@ -179,7 +180,7 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 				}
 
 
-			if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_ID.npt_type, MA_ID.npt_name_s, "Load Sample", "Edit an existing MARTi sample", id_s, PL_ALL)) != NULL)
+			if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, main_group_p, MA_ID.npt_type, MA_ID.npt_name_s, "Load Sample", "Edit an existing MARTi sample", id_s, PL_ALL)) != NULL)
 				{
 					if (SetUpEntriesListParameter (marti_data_p, (StringParameter *) param_p, active_entry_p, true))
 						{
@@ -198,22 +199,25 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 									id_s = NULL;
 								}
 
-							if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_NAME.npt_type, MA_NAME.npt_name_s, "Name", "The name of this sample", active_entry_p ? active_entry_p -> me_sample_name_s : NULL, PL_ALL)) != NULL)
+							if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, main_group_p, MA_NAME.npt_type, MA_NAME.npt_name_s, "Name", "The name of this sample", active_entry_p ? active_entry_p -> me_sample_name_s : NULL, PL_ALL)) != NULL)
 								{
 									param_p -> pa_required_flag = true;
 
-									if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_MARTI_ID.npt_type, MA_MARTI_ID.npt_name_s, "MARTi ID", "The ID for this sample within MARTi", active_entry_p ? active_entry_p -> me_marti_id_s : NULL, PL_ALL)) != NULL)
+									if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, main_group_p, MA_MARTI_ID.npt_type, MA_MARTI_ID.npt_name_s, "MARTi ID", "The ID for this sample within MARTi", active_entry_p ? active_entry_p -> me_marti_id_s : NULL, PL_ALL)) != NULL)
 										{
 											param_p -> pa_required_flag = true;
 
 											if (AddCommonParameters (param_set_p, NULL, active_entry_p, data_p))
 												{
-													if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_SITE_NAME.npt_type, MA_SITE_NAME.npt_name_s, "Site", "The name of the location where this sample was taken", active_entry_p ? active_entry_p -> me_site_name_s : NULL, PL_ALL)) != NULL)
+													if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, main_group_p, MA_SITE_NAME.npt_type, MA_SITE_NAME.npt_name_s, "Site", "The name of the location where this sample was taken", active_entry_p ? active_entry_p -> me_site_name_s : NULL, PL_ALL)) != NULL)
 														{
-															if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, NULL, MA_DESCRIPTION.npt_type, MA_DESCRIPTION.npt_name_s, "Comments", "Any additional information about this sample", active_entry_p ? active_entry_p -> me_comments_s : NULL, PL_ALL)) != NULL)
+															if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, main_group_p, MA_DESCRIPTION.npt_type, MA_DESCRIPTION.npt_name_s, "Comments", "Any additional information about this sample", active_entry_p ? active_entry_p -> me_comments_s : NULL, PL_ALL)) != NULL)
 																{
 																	char **taxa_ss = NULL;
 																	size_t num_taxa = 0;
+																	ParameterGroup *taxa_group_p = CreateAndAddParameterGroupToParameterSet ("Taxonomy Ids", true, data_p, param_set_p);
+																	const char * const display_name_s = "Taxonomy Identifiers";
+																	const char * const description_s = "The taxa ids, and their forebears, for this sample";
 
 																	if (active_entry_p)
 																		{
@@ -221,9 +225,33 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 																			num_taxa = active_entry_p -> me_num_taxa;
 																		}
 
-																	if ((param_p = EasyCreateAndAddStringArrayParameterToParameterSet (data_p, param_set_p, NULL, MA_TAXA.npt_name_s, "Taxononmy IDs", "The taxa ids, and their forebears, for this sample", taxa_ss, num_taxa, PL_ALL)) != NULL)
+																	if (num_taxa > 1)
 																		{
-																			return param_set_p;
+																			param_p = EasyCreateAndAddStringArrayParameterToParameterSet (data_p, param_set_p, taxa_group_p, MA_TAXA.npt_name_s, display_name_s, description_s, taxa_ss, num_taxa, PL_ALL);
+																		}
+																	else
+																		{
+																			char *taxa_s = NULL;
+
+																			if (num_taxa == 1)
+																				{
+																					taxa_s = *taxa_ss;
+																				}
+
+																			param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, taxa_group_p, PT_STRING, MA_TAXA.npt_name_s, display_name_s, description_s, taxa_s, PL_ALL);
+																		}
+
+																	if (param_p)
+																		{
+																			if (AddRepeatableParameterGroupLabelParam (taxa_group_p, param_p))
+																				{
+																					return param_set_p;
+																				}
+																			else
+																				{
+																					PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "AddRepeatableParameterGroupLabelParam failed for %s", param_p -> pa_name_s);
+																				}
+
 																		}
 																	else
 																		{

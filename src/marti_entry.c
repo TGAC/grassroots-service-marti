@@ -212,7 +212,7 @@ json_t *GetMartiEntryAsJSON (const MartiEntry *me_p, MartiServiceData *data_p)
 										{
 											if (SetNonTrivialString (marti_json_p, ME_DESCRIPTION_S, me_p -> me_comments_s, true))
 												{
-													if (SetNonTrivialArrayOfStrings (marti_json_p, ME_TAXA_S, me_p -> me_taxa_ss, 0, true))
+													if (SetNonTrivialArrayOfStrings (marti_json_p, ME_TAXA_S, me_p -> me_taxa_ss, me_p -> me_num_taxa, true))
 														{
 															/*
 															 * We're storing the location as a GeoJSON Point to allow for
