@@ -354,7 +354,7 @@ MartiEntry *GetMartiEntryFromJSON (const json_t *json_p, const MartiServiceData 
 
 																											for (i = 0; i < num_taxa; ++ i, ++ value_ss)
 																												{
-																													const json_t *taxa_entry_p = json_array_get (taxa_p, i);
+																													entry_p = json_array_get (taxa_p, i);
 
 																													if (json_is_string (entry_p))
 																														{
