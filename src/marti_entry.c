@@ -189,7 +189,7 @@ void FreeMartiEntry (MartiEntry *marti_p)
 
 	if (marti_p -> me_taxa_ss)
 		{
-			FreeStringArray (marti_p -> me_taxa_ss, 0);
+			FreeStringArray (marti_p -> me_taxa_ss, marti_p -> me_num_taxa);
 		}
 
 	FreeMemory (marti_p);
