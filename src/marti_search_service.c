@@ -20,7 +20,7 @@
  *      Author: billy
  */
 
-#include "search_service.h"
+#include "marti_search_service.h"
 #include "marti_service.h"
 #include "marti_entry.h"
 
@@ -44,7 +44,6 @@ static NamedParameterType S_MAX_DISTANCE = { "Maximum Distance", PT_UNSIGNED_INT
 static NamedParameterType S_END_DATE = { "End Date", PT_TIME };
 
 
-static const char *GetMartiSearchServiceName (const Service *service_p);
 
 static const char *GetMartiSearchServiceDescription (const Service *service_p);
 
@@ -131,7 +130,7 @@ Service *GetMartiSearchService (GrassrootsServer *grassroots_p)
 
 
 
-static const char *GetMartiSearchServiceName (const Service * UNUSED_PARAM (service_p))
+const char *GetMartiSearchServiceName (const Service * UNUSED_PARAM (service_p))
 {
 	return "MARTi search service";
 }
@@ -162,7 +161,7 @@ static ParameterSet *GetMartiSearchServiceParameters (Service *service_p, DataRe
 		{
 			ServiceData *data_p = service_p -> se_data_p;
 
-			if (AddCommonParameters (param_set_p, NULL, NULL, data_p))
+			if (AddCommonMartiParameters (param_set_p, NULL, NULL, data_p))
 				{
 					Parameter *param_p = EasyCreateAndAddUnsignedIntParameterToParameterSet (data_p, param_set_p, NULL, S_MAX_DISTANCE.npt_name_s, "Radius", "The maximum distance, in metres, to find matching locations for", NULL, PL_ALL);
 

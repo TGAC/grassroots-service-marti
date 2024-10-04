@@ -37,6 +37,8 @@ extern "C"
 
 MARTI_SERVICE_LOCAL Service *GetMartiSearchService (GrassrootsServer *grassroots_p);
 
+MARTI_SERVICE_API const char *GetMartiSearchServiceName (const Service *service_p);
+
 
 
 #ifdef __cplusplus

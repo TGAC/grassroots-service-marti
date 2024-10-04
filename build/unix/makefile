@@ -45,8 +45,8 @@ SRCS 	= \
 	marti_entry.c \
 	marti_service.c \
 	marti_service_data.c \
-	search_service.c \
-	submission_service.c
+	marti_search_service.c \
+	marti_submission_service.c
 
 CPPFLAGS += -DMARTI_SERVICE_EXPORTS 
 

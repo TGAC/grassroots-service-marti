@@ -36,8 +36,8 @@
 #include "io_utils.h"
 #include "audit.h"
 
-#include "search_service.h"
-#include "submission_service.h"
+#include "marti_search_service.h"
+#include "marti_submission_service.h"
 
 
 #ifdef _DEBUG

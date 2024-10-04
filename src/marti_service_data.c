@@ -109,13 +109,12 @@ bool ConfigureMartiService (MartiServiceData *data_p, GrassrootsServer *grassroo
 }
 
 
-
-bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, struct MartiEntry *marti_p, ServiceData *data_p)
+bool AddCommonMartiSearchParametersByValues (ParameterSet *param_set_p, ParameterGroup *param_group_p, const double64 *latitude_p, const double64 *longitude_p, const struct tm *date_p, ServiceData *data_p)
 {
 	bool success_flag = false;
 	Parameter *param_p = NULL;
 
-	if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LATITUDE.npt_type, MA_LATITUDE.npt_name_s, "Latitude", "The latitude of this location", marti_p ? & (marti_p -> me_latitude) : NULL, PL_ALL)) != NULL)
+	if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LATITUDE.npt_type, MA_LATITUDE.npt_name_s, "Latitude", "The latitude of this location", latitude_p, PL_ALL)) != NULL)
 		{
 			const char *precision_s = "8";
 
@@ -123,13 +122,13 @@ bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group
 				{
 					param_p -> pa_required_flag = true;
 
-					if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LONGITUDE.npt_type, MA_LONGITUDE.npt_name_s, "Longitude", "The longitude of this location", marti_p ? & (marti_p -> me_longitude) : NULL, PL_ALL)) != NULL)
+					if ((param_p = EasyCreateAndAddDoubleParameterToParameterSet (data_p, param_set_p, param_group_p, MA_LONGITUDE.npt_type, MA_LONGITUDE.npt_name_s, "Longitude", "The longitude of this location", longitude_p, PL_ALL)) != NULL)
 						{
 							if (AddParameterKeyStringValuePair (param_p, PA_DOUBLE_PRECISION_S, precision_s))
 								{
 									param_p -> pa_required_flag = true;
 
-									if ((param_p = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, param_group_p, MA_START_DATE.npt_name_s, "Start Date", "The starting date of when this sample was taken", marti_p ? marti_p -> me_time_p : NULL, PL_ALL)) != NULL)
+									if ((param_p = EasyCreateAndAddTimeParameterToParameterSet (data_p, param_set_p, param_group_p, MA_START_DATE.npt_name_s, "Start Date", "The starting date of when this sample was taken", date_p, PL_ALL)) != NULL)
 										{
 											param_p -> pa_required_flag = true;
 
@@ -162,6 +161,24 @@ bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group
 	else
 		{
 			PrintErrors (STM_LEVEL_SEVERE, __FILE__, __LINE__, "Failed to add %s parameter", MA_LATITUDE.npt_name_s);
+		}
+
+	return success_flag;
+}
+
+
+bool AddCommonMartiParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, struct MartiEntry *marti_p, ServiceData *data_p)
+{
+	bool success_flag = false;
+
+	if (marti_p)
+		{
+			success_flag = AddCommonMartiSearchParametersByValues (param_set_p, param_group_p, & (marti_p -> me_latitude), & (marti_p -> me_longitude),
+																														 marti_p -> me_time_p, data_p);
+		}
+	else
+		{
+			success_flag = AddCommonMartiSearchParametersByValues (param_set_p, param_group_p, NULL, NULL, NULL, data_p);
 		}
 
 	return success_flag;

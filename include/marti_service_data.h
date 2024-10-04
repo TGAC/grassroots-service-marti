@@ -88,12 +88,14 @@ struct MartiEntry;
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 
 #ifdef ALLOCATE_MARTI_SERVICE_TAGS
-	#define MARTI_PREFIX MARTI_SERVICE_LOCAL
+	#define MARTI_PREFIX_LOCAL MARTI_SERVICE_LOCAL
+	#define MARTI_PREFIX_API MARTI_SERVICE_API
 	#define MARTI_VAL(x)	= x
 	#define MARTI_CONCAT_VAL(x,y) = x y
 	#define MARTI_STRUCT_VAL(x,y)	= { x, y}
 #else
-	#define MARTI_PREFIX extern
+	#define MARTI_PREFIX_LOCAL extern
+	#define MARTI_PREFIX_API extern
 	#define MARTI_VAL(x)
 	#define MARTI_CONCAT_VAL(x,y) = x y
 	#define MARTI_STRUCT_VAL(x,y)
@@ -106,15 +108,17 @@ struct MartiEntry;
 
 
 
-MARTI_PREFIX NamedParameterType MA_ID MARTI_STRUCT_VAL ("Id", PT_STRING);
-MARTI_PREFIX NamedParameterType MA_NAME MARTI_STRUCT_VAL ("Name", PT_STRING);
-MARTI_PREFIX NamedParameterType MA_MARTI_ID MARTI_STRUCT_VAL ("MARTi Id", PT_STRING);
-MARTI_PREFIX NamedParameterType MA_SITE_NAME MARTI_STRUCT_VAL ("Site Name", PT_STRING);
-MARTI_PREFIX NamedParameterType MA_DESCRIPTION MARTI_STRUCT_VAL ("Description", PT_LARGE_STRING);
-MARTI_PREFIX NamedParameterType MA_LATITUDE MARTI_STRUCT_VAL ("Latitude", PT_SIGNED_REAL);
-MARTI_PREFIX NamedParameterType MA_LONGITUDE MARTI_STRUCT_VAL ("Longitude", PT_SIGNED_REAL);
-MARTI_PREFIX NamedParameterType MA_START_DATE MARTI_STRUCT_VAL ("Start Date", PT_TIME);
-MARTI_PREFIX NamedParameterType MA_TAXA MARTI_STRUCT_VAL ("Taxa", PT_STRING_ARRAY);
+MARTI_PREFIX_LOCAL NamedParameterType MA_ID MARTI_STRUCT_VAL ("Id", PT_STRING);
+MARTI_PREFIX_LOCAL NamedParameterType MA_NAME MARTI_STRUCT_VAL ("Name", PT_STRING);
+MARTI_PREFIX_LOCAL NamedParameterType MA_MARTI_ID MARTI_STRUCT_VAL ("MARTi Id", PT_STRING);
+MARTI_PREFIX_LOCAL NamedParameterType MA_SITE_NAME MARTI_STRUCT_VAL ("Site Name", PT_STRING);
+MARTI_PREFIX_LOCAL NamedParameterType MA_DESCRIPTION MARTI_STRUCT_VAL ("Description", PT_LARGE_STRING);
+MARTI_PREFIX_LOCAL NamedParameterType MA_TAXA MARTI_STRUCT_VAL ("Taxa", PT_STRING_ARRAY);
+
+MARTI_PREFIX_API NamedParameterType MA_LATITUDE MARTI_STRUCT_VAL ("Latitude", PT_SIGNED_REAL);
+MARTI_PREFIX_API NamedParameterType MA_LONGITUDE MARTI_STRUCT_VAL ("Longitude", PT_SIGNED_REAL);
+MARTI_PREFIX_API NamedParameterType MA_START_DATE MARTI_STRUCT_VAL ("Start Date", PT_TIME);
+
 
 
 
@@ -132,7 +136,10 @@ MARTI_SERVICE_LOCAL void FreeMartiServiceData (MartiServiceData *data_p);
 MARTI_SERVICE_LOCAL bool ConfigureMartiService (MartiServiceData *data_p, GrassrootsServer *grassroots_p);
 
 
-MARTI_SERVICE_LOCAL bool AddCommonParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, struct MartiEntry *active_entry_p, ServiceData *data_p);
+MARTI_SERVICE_LOCAL bool AddCommonMartiParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, struct MartiEntry *active_entry_p, ServiceData *data_p);
+
+
+MARTI_SERVICE_API bool AddCommonMartiSearchParametersByValues (ParameterSet *param_set_p, ParameterGroup *param_group_p, const double64 *latitude_p, const double64 *longitude_p, const struct tm *date_p, ServiceData *data_p);
 
 
 MARTI_SERVICE_LOCAL bool GetCommonParameters (ParameterSet *param_set_p, const double64 **latitude_pp, const double64 **longitude_pp, const struct tm **start_pp, const char * const name_s, ServiceJob *job_p);

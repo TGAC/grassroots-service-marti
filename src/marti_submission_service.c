@@ -22,7 +22,7 @@
 
 #include <string.h>
 
-#include "submission_service.h"
+#include "marti_submission_service.h"
 #include "marti_service.h"
 
 #include "audit.h"
@@ -207,7 +207,7 @@ static ParameterSet *GetMartiSubmissionServiceParameters (Service *service_p, Da
 										{
 											param_p -> pa_required_flag = true;
 
-											if (AddCommonParameters (param_set_p, NULL, active_entry_p, data_p))
+											if (AddCommonMartiParameters (param_set_p, NULL, active_entry_p, data_p))
 												{
 													if ((param_p = EasyCreateAndAddStringParameterToParameterSet (data_p, param_set_p, main_group_p, MA_SITE_NAME.npt_type, MA_SITE_NAME.npt_name_s, "Site", "The name of the location where this sample was taken", active_entry_p ? active_entry_p -> me_site_name_s : NULL, PL_ALL)) != NULL)
 														{
