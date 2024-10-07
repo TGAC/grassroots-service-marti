@@ -139,7 +139,7 @@ MARTI_SERVICE_LOCAL bool ConfigureMartiService (MartiServiceData *data_p, Grassr
 MARTI_SERVICE_LOCAL bool AddCommonMartiParameters (ParameterSet *param_set_p, ParameterGroup *param_group_p, struct MartiEntry *active_entry_p, ServiceData *data_p);
 
 
-MARTI_SERVICE_API bool AddCommonMartiSearchParametersByValues (ParameterSet *param_set_p, ParameterGroup *param_group_p, const double64 *latitude_p, const double64 *longitude_p, const struct tm *date_p, ServiceData *data_p);
+MARTI_SERVICE_API bool AddCommonMartiSearchParametersByValues (ParameterSet *param_set_p, ParameterGroup *param_group_p, const double64 *latitude_p, const double64 *longitude_p, const struct tm *date_p, const ServiceData *data_p);
 
 
 MARTI_SERVICE_LOCAL bool GetCommonParameters (ParameterSet *param_set_p, const double64 **latitude_pp, const double64 **longitude_pp, const struct tm **start_pp, const char * const name_s, ServiceJob *job_p);
