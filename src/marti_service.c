@@ -226,7 +226,7 @@ static MartiEntry *GetMartiEntryByQuery (bson_t *query_p, const MartiServiceData
 						}		/* if (num_results == 1) */
 					else
 						{
-							char *query_s = bson_as_json (query_p, NULL);
+							char *query_s = bson_as_canonical_extended_json (query_p, NULL);
 
 							if (query_s)
 								{
